@@ -215,25 +215,6 @@ public class Model extends Observable {
         return (emptySpaceExists(b) || (adjacentEqualTileExists(b)));
     }
 
-
-//    private static boolean hasAdjacentEqualTile(int col, int row, Tile tile, Board b) {
-//        // 定义上下左右四个方向的偏移量
-//        int[] colOffsets = {-1, 1, 0, 0};  // 上下左右的列偏移量
-//        int[] rowOffsets = {0, 0, -1, 1};  // 上下左右的行偏移量
-//
-//        // 遍历上下左右
-//        for (int i = 0; i < 4; i++) {
-//            int newCol = col + colOffsets[i];
-//            int newRow = row + rowOffsets[i];
-//            if (isValidCoordinate(newCol, newRow, b.size()) && b.tile(newCol, newRow).value() == tile.value()) {
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-
-
-
     @Override
      /** Returns the model as a string, used for debugging. */
     public String toString() {
