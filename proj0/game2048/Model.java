@@ -168,20 +168,14 @@ public class Model extends Observable {
     }
 
     /**
-     * Returns true if there are any valid moves on the board.
-     * There are two ways that there can be valid moves:
-     * 1. There is at least one empty space on the board.
-     * 2. There are two adjacent tiles with the same value.
+     * Returns true if there are any two neighboring tiles
+     * on Board b with equal values.
      */
-    public static boolean atLeastOneMoveExists(Board b) {
-        if (emptySpaceExists(b)) {
-            return true;
-        }
+    public static boolean adjacentEqualTileExists(Board b) {
         int size = b.size();
         for (int col = 0; col < size; col++) {
             for (int row = 0; row < size; row++) {
                 Tile tile = b.tile(col, row);
-                // 检查上下左右相邻是否有相同的值
                 if (hasAdjacentEqualTile(tile, b)) {
                     return true;
                 }
@@ -189,7 +183,6 @@ public class Model extends Observable {
         }
         return false;
     }
-
     private static boolean hasAdjacentEqualTile(Tile tile, Board b) {
         // 定义上下左右四个方向的偏移量
         int[] colOffsets = {-1, 1, 0, 0};  // 上下左右的列偏移量
@@ -205,6 +198,21 @@ public class Model extends Observable {
         }
         return false;
     }
+    private static boolean isValidCoordinate(int col, int row, int size) {
+        return col >= 0 && col < size && row >= 0 && row < size;
+    }
+
+    /**
+     * Returns true if there are any valid moves on the board.
+     * There are two ways that there can be valid moves:
+     * 1. There is at least one empty space on the board.
+     * 2. There are two adjacent tiles with the same value.
+     */
+    public static boolean atLeastOneMoveExists(Board b) {
+        // If there is at least one empty space on the board.
+        return (emptySpaceExists(b) || (adjacentEqualTileExists(b)));
+    }
+
 
 //    private static boolean hasAdjacentEqualTile(int col, int row, Tile tile, Board b) {
 //        // 定义上下左右四个方向的偏移量
@@ -222,9 +230,7 @@ public class Model extends Observable {
 //        return false;
 //    }
 
-    private static boolean isValidCoordinate(int col, int row, int size) {
-        return col >= 0 && col < size && row >= 0 && row < size;
-    }
+
 
     @Override
      /** Returns the model as a string, used for debugging. */
