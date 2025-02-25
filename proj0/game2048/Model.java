@@ -176,14 +176,15 @@ public class Model extends Observable {
         for (int col = 0; col < size; col++) {
             for (int row = 0; row < size; row++) {
                 Tile tile = b.tile(col, row);
-                if (hasAdjacentEqualTile(tile, b)) {
+                if (hasSameNeighbor(tile, b)) {
                     return true;
                 }
             }
         }
         return false;
     }
-    private static boolean hasAdjacentEqualTile(Tile tile, Board b) {
+    /** Just a helper method 1 for adjacentEqualTileExists*/
+    private static boolean hasSameNeighbor(Tile tile, Board b) {
         // 定义上下左右四个方向的偏移量
         int[] colOffsets = {-1, 1, 0, 0};  // 上下左右的列偏移量
         int[] rowOffsets = {0, 0, -1, 1};  // 上下左右的行偏移量
@@ -198,6 +199,7 @@ public class Model extends Observable {
         }
         return false;
     }
+    /** Still a helper method 2 for adjacentEqualTileExists*/
     private static boolean isValidCoordinate(int col, int row, int size) {
         return col >= 0 && col < size && row >= 0 && row < size;
     }
