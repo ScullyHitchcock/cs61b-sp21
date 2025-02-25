@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @CST
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -137,7 +137,15 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for (int col = 0; col < size; col++) {
+            for (int row = 0; row < size; row++) {
+                Tile tile = b.tile(col, row);
+                if (tile == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,7 +155,15 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for (int col = 0; col < size; col++) {
+            for (int row = 0; row < size; row++) {
+                Tile tile = b.tile(col, row);
+                if (tile != null && tile.value() == MAX_PIECE) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -158,10 +174,57 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        if (emptySpaceExists(b)) {
+            return true;
+        }
+        int size = b.size();
+        for (int col = 0; col < size; col++) {
+            for (int row = 0; row < size; row++) {
+                Tile tile = b.tile(col, row);
+                // 检查上下左右相邻是否有相同的值
+                if (hasAdjacentEqualTile(tile, b)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
+    private static boolean hasAdjacentEqualTile(Tile tile, Board b) {
+        // 定义上下左右四个方向的偏移量
+        int[] colOffsets = {-1, 1, 0, 0};  // 上下左右的列偏移量
+        int[] rowOffsets = {0, 0, -1, 1};  // 上下左右的行偏移量
+
+        // 遍历上下左右
+        for (int i = 0; i < 4; i++) {
+            int newCol = tile.col() + colOffsets[i];
+            int newRow = tile.row() + rowOffsets[i];
+            if (isValidCoordinate(newCol, newRow, b.size()) && b.tile(newCol, newRow).value() == tile.value()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+//    private static boolean hasAdjacentEqualTile(int col, int row, Tile tile, Board b) {
+//        // 定义上下左右四个方向的偏移量
+//        int[] colOffsets = {-1, 1, 0, 0};  // 上下左右的列偏移量
+//        int[] rowOffsets = {0, 0, -1, 1};  // 上下左右的行偏移量
+//
+//        // 遍历上下左右
+//        for (int i = 0; i < 4; i++) {
+//            int newCol = col + colOffsets[i];
+//            int newRow = row + rowOffsets[i];
+//            if (isValidCoordinate(newCol, newRow, b.size()) && b.tile(newCol, newRow).value() == tile.value()) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+
+    private static boolean isValidCoordinate(int col, int row, int size) {
+        return col >= 0 && col < size && row >= 0 && row < size;
+    }
 
     @Override
      /** Returns the model as a string, used for debugging. */
