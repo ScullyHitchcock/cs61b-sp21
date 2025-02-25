@@ -120,7 +120,6 @@ public class Model extends Observable {
                 Tile tile = this.board.tile(col, row);
                 if (tile != null && validMove(tile, mergedTiles)) {
                     changed = true;
-                    mergedTiles[col] = tile;
                 }
             }
         }
@@ -150,6 +149,8 @@ public class Model extends Observable {
             if (upperTile != null) { // If the upper tile is not null.
                 if (upperTile.value() == tile.value() && !tileIsMerged(upperTile, merged)) { // And if upper tile is equal to the tile.
                     this.board.move(col, nextRow, tile); // Move toward it.
+                    merged[nextRow] = this.board.tile(col, nextRow);
+                    this.score += this.board.tile(col, nextRow).value();
                     return true;
                 } else { // if upper tile is unequal to the tile.
                     this.board.move(col, curRow, tile); // Move tile right under to the upper tile.
