@@ -109,10 +109,24 @@ public class Model extends Observable {
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
-
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+        int size = this.board.size();
+        this.board.setViewingPerspective(side);
+        for (int col = 0; col < size; col++) {
+            Tile[] mergedTiles = new Tile[size];
+            for (int row = size - 1; row >= 0; row--) {
+                Tile tile = this.board.tile(col, row);
+                if (tile != null && validMove(tile, mergedTiles)) {
+                    changed = true;
+                    mergedTiles[col] = tile;
+                }
+            }
+        }
+
+        this.board.setViewingPerspective(Side.NORTH);
+
 
         checkGameOver();
         if (changed) {
@@ -120,7 +134,45 @@ public class Model extends Observable {
         }
         return changed;
     }
-
+    /** Helper method for tilt.
+     * while tile is not on the top place, if:
+     *  1. the upper tile is null, move toward it.
+     *  2. the upper tile has the same value of tile, move toward it.
+     * Return true if tile is moved.*/
+    public boolean validMove(Tile tile, Tile[] merged) {
+        int size = this.board.size();
+        int col = tile.col();
+        int row = tile.row();
+        int curRow = row;
+        while (curRow < (size - 1)) {
+            int nextRow = curRow + 1;
+            Tile upperTile = this.board.tile(col, nextRow);
+            if (upperTile != null) { // If the upper tile is not null.
+                if (upperTile.value() == tile.value() && !tileIsMerged(upperTile, merged)) { // And if upper tile is equal to the tile.
+                    this.board.move(col, nextRow, tile); // Move toward it.
+                    return true;
+                } else { // if upper tile is unequal to the tile.
+                    this.board.move(col, curRow, tile); // Move tile right under to the upper tile.
+                    return curRow != row; // if curCol != col, means tile is moved, return true, false otherwise.
+                }
+            } else {
+                if (nextRow == size - 1) { // If reach to the top
+                    this.board.move(col, nextRow, tile); // Move to the top
+                    return true;
+                }
+            }
+            curRow = nextRow;
+        }
+        return false;
+    }
+    public static boolean tileIsMerged(Tile tile, Tile[] merged) {
+        for (Tile t: merged) {
+            if (tile == t) {
+                return true;
+            }
+        }
+        return false;
+    }
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
      */
@@ -211,7 +263,7 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // If there is at least one empty space on the board.
+        // If there is at least one empty space or two adjacent neighbor tiles on the board.
         return (emptySpaceExists(b) || (adjacentEqualTileExists(b)));
     }
 

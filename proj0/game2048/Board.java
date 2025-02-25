@@ -89,17 +89,17 @@ public class Board implements Iterable<Tile> {
         int pcol = viewPerspective.col(col, row, size()),
                 prow = viewPerspective.row(col, row, size());
         if (tile.col() == pcol && tile.row() == prow) {
-            return false;
+            return false; // stop
         }
         Tile tile1 = vtile(col, row, viewPerspective);
         values[tile.col()][tile.row()] = null;
 
         if (tile1 == null) {
             values[pcol][prow] = tile.move(pcol, prow);
-            return false;
+            return false; // move
         } else {
             values[pcol][prow] = tile.merge(pcol, prow, tile1);
-            return true;
+            return true; // move and merge
         }
     }
 
