@@ -118,7 +118,7 @@ public class Model extends Observable {
             Tile[] mergedTiles = new Tile[size];
             for (int row = size - 1; row >= 0; row--) {
                 Tile tile = this.board.tile(col, row);
-                if (tile != null && validMove(tile, mergedTiles)) {
+                if (tile != null && validMove(tile, mergedTiles, col, row)) {
                     changed = true;
                 }
             }
@@ -138,27 +138,26 @@ public class Model extends Observable {
      *  1. the upper tile is null, move toward it.
      *  2. the upper tile has the same value of tile, move toward it.
      * Return true if tile is moved.*/
-    public boolean validMove(Tile tile, Tile[] merged) {
+
+    public boolean validMove(Tile tile, Tile[] merged, int pcol, int prow) {
         int size = this.board.size();
-        int col = tile.col();
-        int row = tile.row();
-        int curRow = row;
+        int curRow = prow;
         while (curRow < (size - 1)) {
             int nextRow = curRow + 1;
-            Tile upperTile = this.board.tile(col, nextRow);
+            Tile upperTile = this.board.tile(pcol, nextRow);
             if (upperTile != null) { // If the upper tile is not null.
                 if (upperTile.value() == tile.value() && !tileIsMerged(upperTile, merged)) { // And if upper tile is equal to the tile.
-                    this.board.move(col, nextRow, tile); // Move toward it.
-                    merged[nextRow] = this.board.tile(col, nextRow);
-                    this.score += this.board.tile(col, nextRow).value();
+                    this.board.move(pcol, nextRow, tile); // Move toward it.
+                    merged[nextRow] = this.board.tile(pcol, nextRow);
+                    this.score += this.board.tile(pcol, nextRow).value();
                     return true;
                 } else { // if upper tile is unequal to the tile.
-                    this.board.move(col, curRow, tile); // Move tile right under to the upper tile.
-                    return curRow != row; // if curCol != col, means tile is moved, return true, false otherwise.
+                    this.board.move(pcol, curRow, tile); // Move tile right under to the upper tile.
+                    return curRow != prow; // if curCol != col, means tile is moved, return true, false otherwise.
                 }
             } else {
                 if (nextRow == size - 1) { // If reach to the top
-                    this.board.move(col, nextRow, tile); // Move to the top
+                    this.board.move(pcol, nextRow, tile); // Move to the top
                     return true;
                 }
             }
@@ -166,6 +165,36 @@ public class Model extends Observable {
         }
         return false;
     }
+
+//    public boolean validMove(Tile tile, Tile[] merged) {
+//        int size = this.board.size();
+//        int col = tile.col();
+//        int row = tile.row();
+//        int curRow = row;
+//        while (curRow < (size - 1)) {
+//            int nextRow = curRow + 1;
+//            Tile upperTile = this.board.tile(col, nextRow);
+//            if (upperTile != null) { // If the upper tile is not null.
+//                if (upperTile.value() == tile.value() && !tileIsMerged(upperTile, merged)) { // And if upper tile is equal to the tile.
+//                    this.board.move(col, nextRow, tile); // Move toward it.
+//                    merged[nextRow] = this.board.tile(col, nextRow);
+//                    this.score += this.board.tile(col, nextRow).value();
+//                    return true;
+//                } else { // if upper tile is unequal to the tile.
+//                    this.board.move(col, curRow, tile); // Move tile right under to the upper tile.
+//                    return curRow != row; // if curCol != col, means tile is moved, return true, false otherwise.
+//                }
+//            } else {
+//                if (nextRow == size - 1) { // If reach to the top
+//                    this.board.move(col, nextRow, tile); // Move to the top
+//                    return true;
+//                }
+//            }
+//            curRow = nextRow;
+//        }
+//        return false;
+//    }
+
     public static boolean tileIsMerged(Tile tile, Tile[] merged) {
         for (Tile t: merged) {
             if (tile == t) {
