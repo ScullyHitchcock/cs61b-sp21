@@ -106,6 +106,7 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
+
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
@@ -113,9 +114,17 @@ public class Model extends Observable {
         this.board.setViewingPerspective(side);
         for (int col = 0; col < size; col++) {
             boolean[] mergedRows = new boolean[size];
-            for (int row = size - 1; row >= 0; row--) {
-                if (board.tile(col, row) != null && validMove(col, row, mergedRows)) {
-                    changed = true;
+            for (int row = size - 2; row >= 0; row--) {
+                Tile tile = board.tile(col, row);
+                if (tile != null) {
+                    int targetRow = findTargetRow(col, row, mergedRows);
+                    boolean moved = board.move(col, targetRow, tile);
+                    if (targetRow != row) {
+                        changed = true;
+                    }
+                    if (moved) {
+                        score += tile.value() * 2;
+                    }
                 }
             }
         }
@@ -126,42 +135,22 @@ public class Model extends Observable {
         }
         return changed;
     }
-
-    /** Helper method for tilt.
-     * while tile is not on the top place, if:
-     *  1. the upper tile is null, move toward it.
-     *  2. the upper tile has the same value of tile, move toward it.
-     * Return true if tile is moved.*/
-    public boolean validMove(int col, int initRow, boolean[] merged) {
-        Tile tile = board.tile(col, initRow);
-        int size = this.board.size();
-        int finalRow = initRow;
-        int topRow = size - 1;
-        boolean scored = false;
-        while (finalRow < topRow) {
-            Tile targetTile = this.board.tile(col, finalRow + 1);
-            if (targetTile != null) { // If the upper tile is not null.
-                // Move tile right under to the upper tile.
-                if (targetTile.value() == tile.value() && !merged[finalRow + 1]) { // And if upper tile is equal to the tile.
-                    finalRow += 1;
-                    merged[finalRow] = true;
-                }
-                scored = this.board.move(col, finalRow, tile); // Move toward it.
-                break;
-            } else if (finalRow == topRow - 1) {
-                finalRow = topRow;
-                scored = this.board.move(col, topRow, tile); // Move to the top
-                break;
-            } else {
-                finalRow += 1;
+    public int findTargetRow(int col, int row, boolean[] merged) {
+        Tile tile = board.tile(col, row);
+        int size = board.size();
+        int targetRow = row;
+        while (targetRow < size - 1 && board.tile(col, targetRow + 1) == null) {
+            targetRow++;
+        }
+        if (targetRow < size - 1) {
+            Tile aboveTile = board.tile(col, targetRow + 1);
+            if (aboveTile.value() == tile.value() && !merged[targetRow + 1]) {
+                targetRow++;
+                merged[targetRow] = true;
             }
         }
-        if (scored) {
-            this.score += this.board.tile(col, finalRow).value();
-        }
-        return finalRow != initRow;
+        return targetRow;
     }
-
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
      */
