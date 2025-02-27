@@ -106,14 +106,15 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
-
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
         int size = this.board.size();
         this.board.setViewingPerspective(side);
         for (int col = 0; col < size; col++) {
+            // Used to store merged rows.
             boolean[] mergedRows = new boolean[size];
+            // Skip the top line, from top to bottom.
             for (int row = size - 2; row >= 0; row--) {
                 Tile tile = board.tile(col, row);
                 if (tile != null) {
@@ -135,6 +136,7 @@ public class Model extends Observable {
         }
         return changed;
     }
+    // Helper method that determine the last row the tile should travel to
     public int findTargetRow(int col, int row, boolean[] merged) {
         Tile tile = board.tile(col, row);
         int size = board.size();
@@ -223,14 +225,15 @@ public class Model extends Observable {
         for (int i = 0; i < 4; i++) {
             int newCol = tile.col() + colOffsets[i];
             int newRow = tile.row() + rowOffsets[i];
-            if (isValidCoordinate(newCol, newRow, b.size()) && b.tile(newCol, newRow).value() == tile.value()) {
+            if (isValidCoordinate(b, newCol, newRow) && b.tile(newCol, newRow).value() == tile.value()) {
                 return true;
             }
         }
         return false;
     }
     /** Still a helper method 2 for adjacentEqualTileExists*/
-    private static boolean isValidCoordinate(int col, int row, int size) {
+    private static boolean isValidCoordinate(Board board, int col, int row) {
+        int size = board.size();
         return col >= 0 && col < size && row >= 0 && row < size;
     }
 
