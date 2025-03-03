@@ -55,14 +55,18 @@ public class LinkedListDeque<T> {
         size += 1;
     }
 
+    /** Returns true if deque is empty, false otherwise. */
     public boolean isEmpty() {
         return sentinel.next == sentinel && sentinel.prev == sentinel;
     }
 
+    /** Returns the number of items in the deque. */
     public int size() {
         return size;
     }
 
+    /** Prints the items in the deque from first to last, separated by a space.
+     * Once all the items have been printed, print out a new line. */
     public void printDeque() {
         Node node = sentinel.next;
         while (node != sentinel) {
@@ -75,6 +79,8 @@ public class LinkedListDeque<T> {
         }
     }
 
+    /** Removes and returns the item at the front of the deque.
+     * If no such item exists, returns null. */
     public T removeFirst() {
         Node nodeToRemove = sentinel.next;
         if (nodeToRemove == sentinel) {
@@ -87,6 +93,8 @@ public class LinkedListDeque<T> {
         return nodeToRemove.item;
     }
 
+    /** Removes and returns the item at the back of the deque.
+     * If no such item exists, returns null. */
     public T removeLast() {
         Node nodeToRemove = sentinel.prev;
         if (nodeToRemove == sentinel) {
@@ -99,16 +107,32 @@ public class LinkedListDeque<T> {
         return nodeToRemove.item;
     }
 
+    /** Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
+     * If no such item exists, returns null. */
     public T get(int index) {
         if (index >= size || index < 0) {
             return null;
         }
-        int i = 0;
         Node node = sentinel.next;
-        for (i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             node = node.next;
         }
         return node.item;
+    }
+
+    /** Gets the item at the given index recursively. */
+    public T getRecursive(int index) {
+        if (index >= size || index < 0) {
+            return null;
+        }
+        return getRecursive(index, sentinel.next);
+    }
+    /** A helper method for getRecursive. */
+    private T getRecursive(int index, Node node) {
+        if (index == 0) {
+            return node.item;
+        }
+        return getRecursive(index - 1, node.next);
     }
 }
 
