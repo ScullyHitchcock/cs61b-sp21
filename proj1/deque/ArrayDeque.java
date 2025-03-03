@@ -13,14 +13,6 @@ public class ArrayDeque<T> {
         end = 4;
     }
 
-    public int realIndex(int index) {
-        int realI = start + index;
-        if (realI > items.length - 1) {
-            realI = realI - (items.length - 1);
-        }
-        return realI;
-    }
-
     public int prevIndex(int index) {
         if (index - 1 < 0) {
             return items.length - 1;
@@ -84,13 +76,12 @@ public class ArrayDeque<T> {
     /** Prints the items in the deque from first to last, separated by a space.
      * Once all the items have been printed, print out a new line. */
     public void printDeque() {
-        int zeroIndex = nextIndex(start);
-        for (int i = zeroIndex; i < zeroIndex + size; i++) {
-            int realIndex = realIndex(i);
+        for (int i = 0; i < size; i ++) {
+            T item = items[realIndex(i)];
             if (i == size - 1) {
-                System.out.println(items[realIndex]);
+                System.out.println(item);
             } else {
-                System.out.print(items[realIndex] + " ");
+                System.out.print(item + " ");
             }
         }
     }
@@ -126,8 +117,17 @@ public class ArrayDeque<T> {
     /** Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
      * If no such item exists, returns null. */
     public T get(int index) {
-        if (index >= size || index < 0) { return null; }
-        int realIndex = realIndex(index);
-        return items[realIndex];
+        return items[realIndex(index)];
+    }
+    public int realIndex(int index) {
+        int zeroIndex = nextIndex(start);
+        int endIndex = prevIndex(end);
+        int realIndex = zeroIndex + index;
+        if (zeroIndex > endIndex) {
+            if (realIndex >= items.length) {
+                realIndex -= items.length;
+            }
+        }
+        return realIndex;
     }
 }

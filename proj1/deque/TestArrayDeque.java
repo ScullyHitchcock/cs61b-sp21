@@ -57,28 +57,41 @@ public class TestArrayDeque {
     }
 
     @Test
-    public void get1() {
+    public void testGet1() {
         ArrayDeque<Integer> l = new ArrayDeque<>();
         for (int i = 0; i < 10; i++) {
             l.addLast(i);
         }
         int res1 = l.get(0); // 0
         int res2 = l.get(1); // 1
-        int res3 = l.get(0); // 9
-        assertEquals(res1, 0);
-        assertEquals(res2, 1);
-        assertEquals(res3, 9);
+        int res3 = l.get(9); // 9
+        assertEquals(0, res1);
+        assertEquals(1, res2);
+        assertEquals(9, res3);
     }
 
     @Test
-    public void get2() {
+    public void testGet2() {
         ArrayDeque<Integer> l = new ArrayDeque<>();
-        for (int i = 0; i < 21; i++) {
+        for (int i = 20; i >= 0; i--) {
             l.addFirst(i);
         }
-        int res1 = l.get(0); // Should be 20.
-        int res2 = l.get(5); // Should be 15.
-        assertEquals(res1, 20);
-        assertEquals(res2, 15);
+        int res1 = l.get(0); // Should be 0.
+        int res2 = l.get(5); // Should be 5.
+        int res3 = l.get(15); // Should be 15.
+        int res4 = l.get(20); // Should be 20.
+        assertEquals(0, res1);
+        assertEquals(5, res2);
+        assertEquals(15, res3);
+        assertEquals(20, res4);
+    }
+
+    @Test
+    public void testPrintDeque() {
+        ArrayDeque<Integer> l = new ArrayDeque<>();
+        for (int i = 20; i >= 0; i--) {
+            l.addFirst(i);
+        }
+        l.printDeque();
     }
 }
