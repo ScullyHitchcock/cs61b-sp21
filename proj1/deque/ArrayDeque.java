@@ -1,30 +1,41 @@
 package deque;
 
 public class ArrayDeque<T> {
+    private static final int MIN_CAPACITY = 8;
     private T[] items;
     private int size;
     private int start;
     private int end;
 
     public ArrayDeque() {
-        items = (T []) new Object[8];
+        items = (T []) new Object[MIN_CAPACITY];
         size = 0;
         start = 3;
         end = 4;
     }
 
-    public int prevIndex(int index) {
+    /** Returns the previous index of the current index. */
+    private int prevIndex(int index) {
         if (index - 1 < 0) {
             return items.length - 1;
         }
         return index - 1;
     }
 
-    public int nextIndex(int index) {
+    /** Returns the next index from the current index. */
+    private int nextIndex(int index) {
         if (index + 1 >= items.length) {
             return 0;
         }
         return index + 1;
+    }
+
+    /** Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
+     * If no such item exists, returns null. */
+    public T get(int num) {
+        if (num >= size || num < 0) { return null; }
+        int index = (start + 1 + num) % items.length;
+        return items[index];
     }
 
     public void addFirst(T item) {
@@ -47,25 +58,30 @@ public class ArrayDeque<T> {
 
     /** Resizes the underlying array to the target capacity. */
     private void resize(int capacity) {
-        T[] a = (T[]) new Object[capacity];
-        int zeroIndex = nextIndex(start);
-        int endIndex = prevIndex(end);
-        if (zeroIndex <= endIndex) {
-            System.arraycopy(items, zeroIndex, a, 0, size);
-        } else {
-            int numOfFirstPart = size - zeroIndex;
-            int numOfRest = size - numOfFirstPart;
-            System.arraycopy(items, zeroIndex, a, 0, numOfFirstPart);
-            System.arraycopy(items, 0, a, numOfFirstPart, numOfRest);
-        }
-        items = a;
-        start = prevIndex(0);
-        end = nextIndex(size - 1);
+        T[] newItems = (T[]) new Object[capacity];
+
+        /* Solution 1 */
+//        for (int i = 0; i < size; i++) {
+//            newItems[i] = get(i);
+//        }
+//        items = newItems;
+//        start = capacity - 1;
+//        end = size;
+
+        /* Solution 2 */
+        int first = nextIndex(start);
+        int firstPartLength = Math.min(size, items.length - first);
+        int secondPartLength = size - firstPartLength;
+        System.arraycopy(items, first, newItems, 0, firstPartLength);
+        System.arraycopy(items, 0, newItems, firstPartLength, secondPartLength);
+        items = newItems;
+        start = capacity - 1;
+        end = size;
     }
 
     /** Returns true if deque is empty, false otherwise. */
     public boolean isEmpty() {
-        return size() == 0;
+        return size == 0;
     }
 
     /** Returns the number of items in the deque. */
@@ -77,7 +93,7 @@ public class ArrayDeque<T> {
      * Once all the items have been printed, print out a new line. */
     public void printDeque() {
         for (int i = 0; i < size; i ++) {
-            T item = items[realIndex(i)];
+            T item = get(i);
             if (i == size - 1) {
                 System.out.println(item);
             } else {
@@ -89,12 +105,12 @@ public class ArrayDeque<T> {
     /** Removes and returns the item at the front of the deque.
      * If no such item exists, returns null. */
     public T removeFirst() {
-        if (items[nextIndex(start)] == null) { return null; }
+        if (this.isEmpty()) { return null; }
         T first = items[nextIndex(start)];
         start = nextIndex(start);
         items[start] = null;
         size -= 1;
-        if (size < items.length / 4 && size > 8) {
+        if (size < items.length / 4 && size > MIN_CAPACITY) {
             resize(size);
         }
         return first;
@@ -103,31 +119,14 @@ public class ArrayDeque<T> {
     /** Removes and returns the item at the back of the deque.
      * If no such item exists, returns null. */
     public T removeLast() {
-        if (items[prevIndex(end)] == null) { return null; }
+        if (this.isEmpty()) { return null; }
         T last = items[prevIndex(end)];
         end = prevIndex(end);
         items[end] = null;
         size -= 1;
-        if (size < items.length / 4 && size > 8) {
+        if (size < items.length / 4 && size > MIN_CAPACITY) {
             resize(size);
         }
         return last;
-    }
-
-    /** Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
-     * If no such item exists, returns null. */
-    public T get(int index) {
-        return items[realIndex(index)];
-    }
-    public int realIndex(int index) {
-        int zeroIndex = nextIndex(start);
-        int endIndex = prevIndex(end);
-        int realIndex = zeroIndex + index;
-        if (zeroIndex > endIndex) {
-            if (realIndex >= items.length) {
-                realIndex -= items.length;
-            }
-        }
-        return realIndex;
     }
 }
