@@ -57,7 +57,7 @@ public class LinkedListDeque<T> {
 
     /** Returns true if deque is empty, false otherwise. */
     public boolean isEmpty() {
-        return sentinel.next == sentinel && sentinel.prev == sentinel;
+        return size == 0;
     }
 
     /** Returns the number of items in the deque. */
@@ -83,9 +83,7 @@ public class LinkedListDeque<T> {
      * If no such item exists, returns null. */
     public T removeFirst() {
         Node nodeToRemove = sentinel.next;
-        if (nodeToRemove == sentinel) {
-            return null;
-        }
+        if (this.isEmpty()) { return null; }
         Node secendNextNode = sentinel.next.next;
         sentinel.next = secendNextNode;
         secendNextNode.prev = sentinel;
@@ -97,9 +95,7 @@ public class LinkedListDeque<T> {
      * If no such item exists, returns null. */
     public T removeLast() {
         Node nodeToRemove = sentinel.prev;
-        if (nodeToRemove == sentinel) {
-            return null;
-        }
+        if (this.isEmpty()) { return null; }
         Node secendLastNode = sentinel.prev.prev;
         sentinel.prev = secendLastNode;
         secendLastNode.next = sentinel;
@@ -110,29 +106,46 @@ public class LinkedListDeque<T> {
     /** Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
      * If no such item exists, returns null. */
     public T get(int index) {
-        if (index >= size || index < 0) {
+        if (index < 0 || index >= size) {
             return null;
         }
-        Node node = sentinel.next;
-        for (int i = 0; i < index; i++) {
-            node = node.next;
+        Node curr;
+        int steps;
+        boolean forward;
+        if (index < size / 2) {
+            curr = sentinel.next;
+            steps = index;
+            forward = true;
+        } else {
+            curr = sentinel.prev;
+            steps = size - index - 1;
+            forward = false;
         }
-        return node.item;
+
+        for (int i = 0; i < steps; i++) {
+            curr = forward ? curr.next : curr.prev;
+        }
+
+        return curr.item;
     }
 
     /** Gets the item at the given index recursively. */
     public T getRecursive(int index) {
-        if (index >= size || index < 0) {
-            return null;
+        if (index >= size || index < 0) { return null; }
+        if (index < size / 2) {
+            return getRecursiveForward(index, sentinel.next);
+        } else {
+            return getRecursiveBackward(size - index - 1, sentinel.prev);
         }
-        return getRecursive(index, sentinel.next);
     }
-    /** A helper method for getRecursive. */
-    private T getRecursive(int index, Node node) {
-        if (index == 0) {
-            return node.item;
-        }
-        return getRecursive(index - 1, node.next);
+    /** helper methods for getRecursive. */
+    private T getRecursiveForward(int i, Node n) {
+        if (i == 0) { return n.item; }
+        return getRecursiveForward(i - 1, n.next);
+    }
+    private T getRecursiveBackward(int i, Node n) {
+        if (i == 0) { return n.item; }
+        return getRecursiveBackward(i - 1, n.prev);
     }
 }
 
