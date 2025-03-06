@@ -8,7 +8,7 @@ public class ArrayDeque<T> {
     private int end;
 
     public ArrayDeque() {
-        items = (T []) new Object[MIN_CAPACITY];
+        items = (T[]) new Object[MIN_CAPACITY];
         size = 0;
         start = 3;
         end = 4;
