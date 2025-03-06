@@ -1,6 +1,8 @@
 package deque;
 
-public class LinkedListDeque<T> {
+import java.util.Iterator;
+
+public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private class Node {
         public T item;
         public Node next;
@@ -9,6 +11,17 @@ public class LinkedListDeque<T> {
             item = i;
             next = n;
             prev = p;
+        }
+    }
+    private class DLListIterator implements Iterator<T> {
+        private int curPos;
+        public boolean hasNext() {
+            return curPos < size;
+        }
+        public T next() {
+            T item = get(curPos);
+            curPos += 1;
+            return item;
         }
     }
     private int size;
@@ -25,6 +38,7 @@ public class LinkedListDeque<T> {
      * ... <--> sentinel <--> originalNextNode <--> ...
      * ... <--> sentinel <--> newItem <--> originalNextNode <--> ...
      * */
+    @Override
     public void addFirst(T item) {
         Node originalNextNode = sentinel.next;
 
@@ -42,6 +56,7 @@ public class LinkedListDeque<T> {
      * ... <--> originalPrevNode <--> sentinel <--> ...
      * ... <--> originalPrevNode <--> newItem <--> sentinel <--> ...
      * */
+    @Override
     public void addLast(T item) {
         Node originalPrevNode = sentinel.prev;
 
@@ -56,17 +71,20 @@ public class LinkedListDeque<T> {
     }
 
     /** Returns true if deque is empty, false otherwise. */
+    @Override
     public boolean isEmpty() {
         return size == 0;
     }
 
     /** Returns the number of items in the deque. */
+    @Override
     public int size() {
         return size;
     }
 
     /** Prints the items in the deque from first to last, separated by a space.
      * Once all the items have been printed, print out a new line. */
+    @Override
     public void printDeque() {
         Node node = sentinel.next;
         while (node != sentinel) {
@@ -81,6 +99,7 @@ public class LinkedListDeque<T> {
 
     /** Removes and returns the item at the front of the deque.
      * If no such item exists, returns null. */
+    @Override
     public T removeFirst() {
         Node nodeToRemove = sentinel.next;
         if (this.isEmpty()) { return null; }
@@ -93,6 +112,7 @@ public class LinkedListDeque<T> {
 
     /** Removes and returns the item at the back of the deque.
      * If no such item exists, returns null. */
+    @Override
     public T removeLast() {
         Node nodeToRemove = sentinel.prev;
         if (this.isEmpty()) { return null; }
@@ -105,6 +125,7 @@ public class LinkedListDeque<T> {
 
     /** Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
      * If no such item exists, returns null. */
+    @Override
     public T get(int index) {
         if (index < 0 || index >= size) {
             return null;
@@ -146,6 +167,11 @@ public class LinkedListDeque<T> {
     private T getRecursiveBackward(int i, Node n) {
         if (i == 0) { return n.item; }
         return getRecursiveBackward(i - 1, n.prev);
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new DLListIterator();
     }
 }
 

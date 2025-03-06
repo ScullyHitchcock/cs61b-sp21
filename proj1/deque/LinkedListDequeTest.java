@@ -1,8 +1,8 @@
 package deque;
 
 import org.junit.Test;
+import java.util.Iterator;
 import static org.junit.Assert.*;
-
 
 /** Performs some basic linked list tests. */
 public class LinkedListDequeTest {
@@ -147,6 +147,45 @@ public class LinkedListDequeTest {
         l.addLast(4);
         for (int i = -1; i < 5; i++) {
             assertSame(l.get(i), l.getRecursive(i));
+        }
+    }
+
+    @Test
+    public void testIteration() {
+        LinkedListDeque<Integer> l = new LinkedListDeque();
+        for (int i = 0; i < 100; i++) {
+            l.addLast(i);
+        }
+        Iterator<Integer> iterator = l.iterator();
+        while(iterator.hasNext()) {
+            System.out.print(iterator.next() + " ");
+        }
+        System.out.println();
+        LinkedListDeque<String> p = new LinkedListDeque();
+        for (int i = 0; i < 100; i++) {
+            p.addLast("i");
+        }
+        Iterator<String> iterator1 = p.iterator();
+        while(iterator1.hasNext()) {
+            System.out.print(iterator1.next() + " ");
+        }
+    }
+
+    @Test
+    public void testForEachLoop() {
+        LinkedListDeque<Integer> l = new LinkedListDeque();
+
+        LinkedListDeque<String> p = new LinkedListDeque();
+        for (int i = 0; i < 100; i++) {
+            l.addLast(i);
+            p.addLast("i");
+        }
+        for (int i: l) {
+            System.out.print(i + " ");
+        }
+        System.out.println();
+        for (String s: p) {
+            System.out.print(s + " ");
         }
     }
 }

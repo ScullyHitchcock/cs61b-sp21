@@ -1,6 +1,8 @@
 package deque;
 
-public class ArrayDeque<T> {
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Deque<T> {
     private static final int MIN_CAPACITY = 8;
     private T[] items;
     private int size;
@@ -32,6 +34,7 @@ public class ArrayDeque<T> {
 
     /** Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
      * If no such item exists, returns null. */
+    @Override
     public T get(int num) {
         if (num >= size || num < 0) { return null; }
         int index = (start + 1 + num) % items.length;
@@ -128,5 +131,9 @@ public class ArrayDeque<T> {
             resize(size);
         }
         return last;
+    }
+
+    public Iterator<T> iterator() {
+        return null;
     }
 }
