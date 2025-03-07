@@ -3,6 +3,8 @@ package deque;
 import java.util.Iterator;
 
 public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
+    private int size;
+    private Node sentinel;
     private class Node {
         public T item;
         public Node next;
@@ -14,18 +16,21 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         }
     }
     private class DLListIterator implements Iterator<T> {
-        private int curPos;
-        public boolean hasNext() {
-            return curPos < size;
+        private Node curNode;
+        public DLListIterator() {
+            curNode = sentinel.next;
         }
+        @Override
+        public boolean hasNext() {
+            return curNode != sentinel;
+        }
+        @Override
         public T next() {
-            T item = get(curPos);
-            curPos += 1;
+            T item = curNode.item;
+            curNode = curNode.next;
             return item;
         }
     }
-    private int size;
-    private Node sentinel;
 
     public LinkedListDeque() {
         sentinel = new Node(null, null, null);
@@ -89,12 +94,13 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         Node node = sentinel.next;
         while (node != sentinel) {
             if (node.next == sentinel) {
-                System.out.println(node.item);
+                System.out.print(node.item);
             } else {
                 System.out.print(node.item + " ");
             }
             node = node.next;
         }
+        System.out.println();
     }
 
     /** Removes and returns the item at the front of the deque.
@@ -130,20 +136,21 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         if (index < 0 || index >= size) {
             return null;
         }
-        Node curr;
-        int steps;
-        boolean forward;
-        if (index < size / 2) {
+        Node curr; // Starting pointer
+        int steps; // The number of steps the pointer needs to move
+        boolean forward; // The flag that determines whether the pointer goes forward or backward.
+
+        if (index < size / 2) { // Forward
             curr = sentinel.next;
             steps = index;
             forward = true;
-        } else {
+        } else { // Backward
             curr = sentinel.prev;
             steps = size - index - 1;
             forward = false;
         }
 
-        for (int i = 0; i < steps; i++) {
+        for (int i = 0; i < steps; i++) { // Moving the pointer
             curr = forward ? curr.next : curr.prev;
         }
 
@@ -173,6 +180,27 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     public Iterator<T> iterator() {
         return new DLListIterator();
     }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) { return true; }
+        if (!(other instanceof LinkedListDeque)) { return false; }
+
+        LinkedListDeque<T> o = (LinkedListDeque<T>) other;
+        if (this.size != o.size) { return false; }
+
+        Iterator<T> iterThis = this.iterator();
+        Iterator<T> iterOther = o.iterator();
+
+        while (iterThis.hasNext() && iterOther.hasNext()) {
+            T thisItem = iterThis.next();
+            T otherItem = iterOther.next();
+            if (!thisItem.equals(otherItem)) { return false;}
+        }
+
+        return true;
+    }
+
 }
 
 
