@@ -177,9 +177,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return new DLListIterator();
-    }
+    public Iterator<T> iterator() { return new DLListIterator(); }
 
     @Override
     public boolean equals(Object other) {
@@ -197,10 +195,8 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
             T otherItem = iterOther.next();
             if (!thisItem.equals(otherItem)) { return false;}
         }
-
         return true;
     }
-
 }
 
 
