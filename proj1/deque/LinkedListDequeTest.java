@@ -322,4 +322,24 @@ public class LinkedListDequeTest {
         long acceptableThreshold = 100_000_000;
         assertTrue("equals() method performance is too slow", duration < acceptableThreshold);
     }
+
+    @Test
+    public void testCrossTypeEqualsPerformance() {
+        int dataSize = 1000000; // 测试数据量，可根据需要调整
+        LinkedListDeque<Integer> deque1 = new LinkedListDeque<>();
+        ArrayDeque<Integer> deque2 = new ArrayDeque<>();
+        for (int i = 0; i < dataSize; i++) {
+            deque1.addLast(i);
+            deque2.addLast(i);
+        }
+        long startTime = System.nanoTime();
+        boolean result = deque1.equals(deque2);
+        long endTime = System.nanoTime();
+        long duration = endTime - startTime;
+        assertTrue(result);
+        System.out.println("equals() for two " + dataSize + " element deques took " + duration + " ns");
+        // 可选：断言执行时间在可接受范围内（例如 100 毫秒 = 10,000,000 ns）
+        long acceptableThreshold = 100_000_000;
+        assertTrue("equals() method performance is too slow", duration < acceptableThreshold);
+    }
 }

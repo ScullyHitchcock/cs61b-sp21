@@ -2,7 +2,6 @@ package deque;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Iterator;
@@ -340,6 +339,29 @@ public class ArrayDequeTest {
         // 可选：断言执行时间在可接受范围内（例如 100 毫秒 = 100,000,000 ns）
         long acceptableThreshold = 100_000_000;
         assertTrue("equals() method performance is too slow", duration < acceptableThreshold);
+    }
+
+    @Test
+    public void testCrossTypeEquals() {
+        ArrayDeque<Integer> arrayDeque = new ArrayDeque<>();
+        LinkedListDeque<Integer> linkedListDeque = new LinkedListDeque<>();
+
+        // Both deques are empty
+        assertTrue(arrayDeque.equals(linkedListDeque));
+        assertTrue(linkedListDeque.equals(arrayDeque));
+
+        // Add identical elements to both
+        for (int i = 0; i < 10; i++) {
+            arrayDeque.addLast(i);
+            linkedListDeque.addLast(i);
+        }
+        assertTrue(arrayDeque.equals(linkedListDeque));
+        assertTrue(linkedListDeque.equals(arrayDeque));
+
+        // Modify one deque and verify inequality
+        arrayDeque.addLast(10);
+        assertFalse(arrayDeque.equals(linkedListDeque));
+        assertFalse(linkedListDeque.equals(arrayDeque));
     }
 }
 
