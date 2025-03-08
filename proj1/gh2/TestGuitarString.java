@@ -20,6 +20,23 @@ public class TestGuitarString  {
             StdAudio.play(aString.sample());
             aString.tic();
         }
+        aString.pluck();
+        for (int i = 0; i < 50000; i += 1) {
+            StdAudio.play(aString.sample());
+            aString.tic();
+        }
+    }
+
+    @Test
+    public void testPluckTheAString1() {
+        GuitarString[] Strings = MyGuitarHero.STRINGS;
+        for (GuitarString s: Strings) {
+            s.pluck();
+            for (int i = 0; i < 20000; i += 1) {
+                StdAudio.play(s.sample());
+                s.tic();
+            }
+        }
     }
 
     @Test
