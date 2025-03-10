@@ -17,5 +17,25 @@ public class MyGuitarHero {
         }
         return strings;
     }
+
+    public static void main(String[] args) {
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char key = StdDraw.nextKeyTyped();
+                int index = KEYBOARD.indexOf(key);
+                if (index != -1) {
+                    STRINGS[index].pluck();
+                }
+            }
+            double sample = 0;
+            for (GuitarString s : STRINGS) {
+                sample += s.sample();
+            }
+            StdAudio.play(sample);
+            for (GuitarString s : STRINGS) {
+                s.tic();
+            }
+        }
+    }
 }
 

@@ -137,7 +137,9 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
      * If no such item exists, returns null. */
     @Override
     public T removeLast() {
-        if (this.isEmpty()) { return null; }
+        if (this.isEmpty()) {
+            return null;
+        }
         T last = items[prevIndex(end)];
         end = prevIndex(end);
         items[end] = null;
@@ -149,15 +151,23 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     }
 
     @Override
-    public Iterator<T> iterator() { return new AListIterator(); }
+    public Iterator<T> iterator() {
+        return new AListIterator();
+    }
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) { return true; }
-        if (!(other instanceof Iterable) || !(other instanceof Deque)) { return false; }
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof Iterable) || !(other instanceof Deque)) {
+            return false;
+        }
 
         Deque<T> o = (Deque<T>) other;
-        if (this.size() != o.size()) { return false; }
+        if (this.size() != o.size()) {
+            return false;
+        }
 
         Iterable<T> otherDeque = (Iterable<T>) other;
         Iterator<T> iterThis = this.iterator();
@@ -166,7 +176,9 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         while (iterThis.hasNext() && iterOther.hasNext()) {
             T thisItem = iterThis.next();
             T otherItem = iterOther.next();
-            if (!thisItem.equals(otherItem)) { return false;}
+            if (!thisItem.equals(otherItem)) {
+                return false;
+            }
         }
         return true;
     }
