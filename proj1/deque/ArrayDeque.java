@@ -115,7 +115,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         /* 以传入的capacity为长度创建新数组 */
         T[] newItems = (T[]) new Object[capacity];
 
-        /* Solution 1 简单遍历原数组提取元素放入新数组，性能较差*/
+        /* Solution 1 简单遍历原数组提取元素放入新数组，优点：可读性较高。缺点：性能较差*/
 //        for (int i = 0; i < size; i++) {
 //            newItems[i] = get(i);
 //        }
@@ -125,7 +125,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
 
 
-        /* Solution 2
+        /* Solution 2 使用 System.arraycopy 方法分两段复制数组，优点：性能较快。缺点：可读性较低。
         * 当需要调用resize时存在两种情况：
         * 1，原数组是连贯的，即队列首位元素 x 在最前面，末位元素 y 在最后面；
         * 2，原数组是不连贯的，即队列首位元素 x 在数组中间，末位元素在 x 前面；
@@ -139,16 +139,15 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
                 二者的最小值就是第一段元素的长度。
              b，计算剩余元素的个数（如果第一段元素的长度已经是size，那么第二段长度为0）。
         * 3，复制第一段元素。
-        * 4，复制第二段元素（如果第一段元素已经复制完成，这一步将空过）。
+        * 4，复制第二段元素（如果第一段元素已经把全部元素复制完成，这一步将空过）。
         * 5，将新数组赋值为items
         * 6，重新设置start，end指针
          */
         int first = nextIndex(start);
-        int firstPartLength = Math.min(size, items.length - first);
-        int secondPartLength = size - firstPartLength;
-
-        System.arraycopy(items, first, newItems, 0, firstPartLength);
-        System.arraycopy(items, 0, newItems, firstPartLength, secondPartLength);
+        int firstPartLength = Math.min(size, items.length - first); // 第一段长度：首位元素到数组末端的长度
+        int secondPartLength = size - firstPartLength; // 第二段长度：size - 第一段长度
+        System.arraycopy(items, first, newItems, 0, firstPartLength); // 复制第一段
+        System.arraycopy(items, 0, newItems, firstPartLength, secondPartLength); // 复制第二段
         items = newItems;
         start = capacity - 1;
         end = size;

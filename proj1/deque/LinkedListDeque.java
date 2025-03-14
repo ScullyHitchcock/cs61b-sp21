@@ -3,11 +3,18 @@ package deque;
 import java.util.Iterator;
 
 public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
-    /*
 
-     */
+    /* 队列长度，初始为0 */
     private int size;
+
+    /* 哨兵节点 */
     private Node sentinel;
+
+    /* 定义“节点”类
+    * 一个节点有三个部分组成，分别为：
+    * 1，prev：指向节点前一个节点的指针
+    * 2，next：指向节点后一个节点的指针
+    * 3，item：节点所储存的元素 */
     private class Node {
         public T item;
         public Node next;
@@ -18,6 +25,8 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
             prev = p;
         }
     }
+
+    /* 为了实现 LinkListDeque 作为一个可迭代对象，所必须实现的内部类：迭代器。 */
     private class DLListIterator implements Iterator<T> {
         private Node curNode;
         public DLListIterator() {
@@ -35,6 +44,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         }
     }
 
+    /* 初始化 LinkedListDeque ：创建哨兵节点，其 item 为null ，然后把prev和next都指向自己，形成一个闭环。*/
     public LinkedListDeque() {
         sentinel = new Node(null, null, null);
         sentinel.prev = sentinel;
