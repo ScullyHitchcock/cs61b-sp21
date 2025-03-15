@@ -25,5 +25,17 @@ public class Repository {
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
 
+    public static void setup() {
+        // 新建 .gitlet 文件夹
+        GITLET_DIR.mkdir();
+        // 创建 initial commit 对象 iniCOmm：
+        //  1 contains no files
+        //  2 has the commit message: initial commit
+        //  3 It will have a single branch: master,
+        //    which initially points to this initial commit,
+        //    and master will be the current branch.
+        //  4 timestamp: 00:00:00 UTC, Thursday, 1 January 1970
+    }
+
     /* TODO: fill in the rest of this class. */
 }

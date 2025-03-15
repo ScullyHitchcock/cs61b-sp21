@@ -1,6 +1,6 @@
 # Gitlet Design Document
 
-**Name**:
+**Name**: CST
 
 ## Classes and Data Structures
 
