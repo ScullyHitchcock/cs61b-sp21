@@ -16,13 +16,13 @@ public class Main {
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
-                if (Repository.GITLET_DIR.exists()) {
-                    throw Utils.error("A Gitlet version-control system already exists in the current directory.");
-                }
+                validateNumArgs(firstArg, args, 1);
                 Repository.setup();
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
+                validateNumArgs(firstArg, args, 2);
+                String fileName = args[1];
+                Repository.addFile(fileName);
                 break;
             case "commit":
                 break;
@@ -48,6 +48,18 @@ public class Main {
                 break;
             default:
                 throw Utils.error("Unknown command: %s", args[0]);
+        }
+    }
+
+    /**
+     * 检查输入的命令个数是否符合规定，如果不符合则抛出异常 Utils.error。
+     * @param cmd：命令关键字如 "init"、"add" 等。
+     * @param args：输入的命令。
+     * @param n：规定的命令个数。
+     */
+    public static void validateNumArgs(String cmd, String[] args, int n) {
+        if (args.length != n) {
+            throw Utils.error("Invalid number of arguments for: %s.", cmd);
         }
     }
 }
