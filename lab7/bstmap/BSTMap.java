@@ -1,64 +1,76 @@
 package bstmap;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
-public class BSTMap<K extends Comparable, V> implements Map61B<K, V>{
-
-    int size = 0;
+public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
 
     /* 内部类（二叉树结构）*/
-    Tree bst;
-    private class Tree {
+    private Node node;
+    private int size = 0;
+
+    private class Node implements Comparable<Node>{
         private K key;
         private V val;
-        private Tree left;
-        private Tree right;
+        private Node left;
+        private Node right;
 
-        /**
-         * 构造带分叉的树
-         * @param k：键
-         * @param v：值
-         * @param l：左分支，其分支内的节点的 K 对象都比 k 小
-         * @param r：右分支，其分支内的节点的 K 对象都比 k 大
-         */
-        public Tree(K k, V v, Tree l, Tree r) {
-            key = k;
-            val = v;
-            left = l;
-            right = r;
-        }
-
-        /** 构造空树 */
-        public Tree(K k, V v) {
+        /** 构造空节点 */
+        public Node(K k, V v) {
             key = k;
             val = v;
         }
 
-        /** 左接枝 */
-        private void addLeft(Tree left) {
-            this.left = left;
+        @Override
+        public int compareTo(Node o) {
+            return this.key.compareTo(o.key);
         }
 
-        /** 右接枝 */
-        private void addRight(Tree right) {
-            this.right = right;
+        /** 当 node 子节点数为1时，返回子节点。 */
+        private Node child(){
+            if (this.left == null) {
+                return this.right;
+            } else return this.left;
+        }
+
+        /** 返回子节点数 */
+        private int children() {
+            int res = 0;
+            if (left != null) {
+                res += 1;
+            }
+            if (right != null) {
+                res += 1;
+            }
+            return res;
         }
     }
 
     @Override
     public void clear() {
-
+        node = null;
+        size = 0;
     }
 
     @Override
     public boolean containsKey(K key) {
-        return false;
+        return (get(node, key) != null);
     }
 
     @Override
     public V get(K key) {
-        return null;
+        Node n = get(node, key);
+        if (n == null) return null;
+        return n.val;
+    }
+
+    private Node get(Node n, K key) {
+        if (n == null) return null;
+        int res = key.compareTo(n.key);
+        if (res == 0) return n;
+        if (res > 0) return get(n.right, key);
+        return get(n.left,key);
     }
 
     @Override
@@ -66,50 +78,76 @@ public class BSTMap<K extends Comparable, V> implements Map61B<K, V>{
         return size;
     }
 
+    /**
+     * 从根节点出发开始检测每个 node ：
+     * 1，if node 的子节点数量为 0 :
+     *      if key > node.key: key 放在 node.right，结束。
+     *      否则放在node.left，结束。
+     * 2，if node 的子节点数量为 1 :
+     *      将 key, node.key, node.child.key 进行排序，
+     *      创建新节点树 Tree(最大值, 中间值, 最小值)，替换原 node ，结束。
+     *      if key < node.key 且 node.left 不为空:
+     * 3，if node 的子节点数量为 2 :
+     *      if key > node.key: node = node.right
+     *      if key < node.key: node = node.left
+     */
     @Override
     public void put(K key, V value) {
-        Tree t = new Tree(key, value);
-        if (size() == 0) {
-            bst = t;
-        } else {
-            Tree cur = bst; // 设置指针，初始指向 root
-            while(cur.left != null ||  cur.right != null) { // 只要当前node存在child
-                int res = key.compareTo(cur.key); // 比较新key和指针指向的node的key大小
-                if (res == 0) return; // 如果结果为0，说明新key与当前key相同，返回
-                if (res > 0) { // 如果结果大于0，说明新key比当前key大，移动指针值node的右边
-                    if (cur.right == null) {
-                        cur.right = t;
-                        break;
-                    }
-                    cur = cur.right;
-                } else { // 如果结果小于0，说明新key比当前key小，移动指针值node的左边
-                    if (cur.left == null) {
-                        cur.left = t;
-                        break;
-                    }
-                    cur = cur.left;
-                }
+        Node newNode = new Node(key, value);
+        if (size == 0) { // 处理初始化
+            node = newNode;
+            size += 1;
+        } else if (rebalance(node, newNode)) {
+            size += 1;
+        }
+    }
+
+    private boolean rebalance(Node node, Node newNode) {
+        int children = node.children(); // 子节点数
+        int res = newNode.compareTo(node); // 新节点与当前节点的比较结果
+        if (res == 0) return false;
+        if (children == 2) { // 当 node 有两个子节点，继续递归，直到 node 子节点数不足2个。
+            if (res > 0) {
+                return rebalance(node.right, newNode);
+            } else {
+                return rebalance(node.left, newNode);
             }
+        }
+        // 开始重新分配节点链接情况
+        else if (children == 1) { // 当 node 只有一个子节点，进行平衡节点左右操作。
+            Node curCopy = new Node(node.key, node.val);
+            Object[] arr = new Object[]{newNode, curCopy, node.child()};
+            Arrays.sort(arr);
+            Node root = (Node) arr[1];
+            node.key = root.key;
+            node.val = root.val;
+            node.left = (Node) arr[0];
+            node.right = (Node) arr[2];
+            return true;
+        } else { // 当 node 没有子节点，直接加入。
+            if (res > 0) node.right = newNode;
+            else node.left = newNode;
+            return true;
         }
     }
 
     @Override
     public Set<K> keySet() {
-        return Set.of();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public V remove(K key) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public V remove(K key, V value) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Iterator<K> iterator() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }
