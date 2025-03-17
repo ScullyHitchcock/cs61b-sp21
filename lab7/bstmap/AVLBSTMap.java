@@ -58,45 +58,45 @@ public class AVLBSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      */
     @Override
     public void put(K key, V value) {
-        root = put(root, key, value);
+        root = get(root, key, value);
     }
 
-    private Node put(Node node, K key, V value) {
+    private Node get(Node node, K key, V value) {
         if (node == null) {
             size++;
             return new Node(key, value);
         }
         int cmp = key.compareTo(node.key);
         if (cmp < 0) {
-            node.left = put(node.left, key, value);
+            node.left = get(node.left, key, value);
         } else if (cmp > 0) {
-            node.right = put(node.right, key, value);
+            node.right = get(node.right, key, value);
         } else {  // 重复 key，更新值
             node.val = value;
             return node;
         }
         // 更新当前节点高度
-        node.height = 1 + Math.max(height(node.left), height(node.right));
+        updateHeight(node);
         // 获取平衡因子
         int balance = getBalance(node);
 
-        // 左左情况
+        // 左左情况：新键插入到左子树的左侧，直接进行右旋
         if (balance > 1 && key.compareTo(node.left.key) < 0) {
-            return rightRotate(node);
+            return rotate(node, false);
         }
-        // 右右情况
+        // 右右情况：新键插入到右子树的右侧，直接进行左旋
         if (balance < -1 && key.compareTo(node.right.key) > 0) {
-            return leftRotate(node);
+            return rotate(node, true);
         }
-        // 左右情况
+        // 左右情况：先对左子节点进行左旋，再对当前节点进行右旋
         if (balance > 1 && key.compareTo(node.left.key) > 0) {
-            node.left = leftRotate(node.left);
-            return rightRotate(node);
+            node.left = rotate(node.left, true);
+            return rotate(node, false);
         }
-        // 右左情况
+        // 右左情况：先对右子节点进行右旋，再对当前节点进行左旋
         if (balance < -1 && key.compareTo(node.right.key) < 0) {
-            node.right = rightRotate(node.right);
-            return leftRotate(node);
+            node.right = rotate(node.right, false);
+            return rotate(node, true);
         }
         return node;
     }
@@ -106,35 +106,43 @@ public class AVLBSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         return node == null ? 0 : node.height;
     }
 
+    /**
+     * 更新节点的高度。高度等于左右子树中较大者的高度加 1。
+     * @param node 要更新高度的节点
+     */
+    private void updateHeight(Node node) {
+        node.height = Math.max(height(node.left), height(node.right)) + 1;
+    }
+
     // 计算节点的平衡因子（左子树高度 - 右子树高度）
     private int getBalance(Node node) {
         return node == null ? 0 : height(node.left) - height(node.right);
     }
 
-    // 右旋操作
-    private Node rightRotate(Node y) {
-        Node x = y.left;
-        Node T2 = x.right;
-        // 旋转过程
-        x.right = y;
-        y.left = T2;
-        // 更新高度
-        y.height = Math.max(height(y.left), height(y.right)) + 1;
-        x.height = Math.max(height(x.left), height(x.right)) + 1;
-        return x;
-    }
-
-    // 左旋操作
-    private Node leftRotate(Node x) {
-        Node y = x.right;
-        Node T2 = y.left;
-        // 旋转过程
-        y.left = x;
-        x.right = T2;
-        // 更新高度
-        x.height = Math.max(height(x.left), height(x.right)) + 1;
-        y.height = Math.max(height(y.left), height(y.right)) + 1;
-        return y;
+    /**
+     * 通用旋转函数，根据参数决定进行左旋还是右旋。
+     * @param node 需要旋转的节点
+     * @param leftRotation 如果为 true，则进行左旋；否则进行右旋。
+     * @return 旋转后的子树根节点
+     */
+    private Node rotate(Node node, boolean leftRotation) {
+        if (leftRotation) {
+            // 左旋操作：将 node 的右子节点提升为新的根节点
+            Node child = node.right;
+            node.right = child.left;
+            child.left = node;
+            updateHeight(node);
+            updateHeight(child);
+            return child;
+        } else {
+            // 右旋操作：将 node 的左子节点提升为新的根节点
+            Node child = node.left;
+            node.left = child.right;
+            child.right = node;
+            updateHeight(node);
+            updateHeight(child);
+            return child;
+        }
     }
 
     @Override
