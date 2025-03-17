@@ -150,4 +150,28 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
     public Iterator<K> iterator() {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * Prints an in-order diagram of the AVL tree. The tree is printed sideways (rotated 90° clockwise).
+     */
+    public void printInOrder() {
+        printInOrder(node, 0);
+    }
+
+    /**
+     * Helper method to print the tree in order with indentation representing depth.
+     * The tree is printed sideways, so the right subtree is printed first.
+     *
+     * @param node The current node.
+     * @param level The depth level for indentation.
+     */
+    private void printInOrder(Node node, int level) {
+        if (node == null) return;
+        printInOrder(node.right, level + 1);
+        for (int i = 0; i < level; i++) {
+            System.out.print("    ");
+        }
+        System.out.println(node.key + " (" + node.val + ")");
+        printInOrder(node.left, level + 1);
+    }
 }
