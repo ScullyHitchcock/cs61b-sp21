@@ -31,9 +31,8 @@ public class InsertInOrderSpeedTest {
         do {
             System.out.print("\nEnter # strings to insert into the maps: ");
             int N = i.waitForPositiveInt(input);
-            timeInOrderMap61B(new ULLMap<>(), N);
+//            timeInOrderMap61B(new ULLMap<>(), N);
             timeInOrderMap61B(new BSTMap<>(), N);
-            timeInOrderMap61B(new AVLBSTMap<>(), N);
             timeInOrderTreeMap(new TreeMap<>(), N);
             timeInOrderHashMap(new HashMap<>(), N);
 

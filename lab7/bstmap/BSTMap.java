@@ -1,76 +1,49 @@
 package bstmap;
-
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
-public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
+public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
-    /* 内部类（二叉树结构）*/
-    private Node node;
+    private Node root;
     private int size = 0;
 
-    private class Node implements Comparable<Node>{
+    private class Node {
         private K key;
         private V val;
         private Node left;
         private Node right;
+        private int height;  // AVL 树中每个节点的高度
 
-        /** 构造空节点 */
-        public Node(K k, V v) {
-            key = k;
-            val = v;
-        }
-
-        @Override
-        public int compareTo(Node o) {
-            return this.key.compareTo(o.key);
-        }
-
-        /** 当 node 子节点数为1时，返回子节点。 */
-        private Node child(){
-            if (this.left == null) {
-                return this.right;
-            } else return this.left;
-        }
-
-        /** 返回子节点数 */
-        private int children() {
-            int res = 0;
-            if (left != null) {
-                res += 1;
-            }
-            if (right != null) {
-                res += 1;
-            }
-            return res;
+        public Node(K key, V val) {
+            this.key = key;
+            this.val = val;
+            this.height = 1;  // 新节点高度为 1
         }
     }
 
     @Override
     public void clear() {
-        node = null;
+        root = null;
         size = 0;
     }
 
     @Override
     public boolean containsKey(K key) {
-        return (get(node, key) != null);
+        return getNode(root, key) != null;
     }
 
     @Override
     public V get(K key) {
-        Node n = get(node, key);
-        if (n == null) return null;
-        return n.val;
+        Node n = getNode(root, key);
+        return n == null ? null : n.val;
     }
 
-    private Node get(Node n, K key) {
-        if (n == null) return null;
-        int res = key.compareTo(n.key);
-        if (res == 0) return n;
-        if (res > 0) return get(n.right, key);
-        return get(n.left,key);
+    private Node getNode(Node node, K key) {
+        if (node == null) return null;
+        int cmp = key.compareTo(node.key);
+        if (cmp == 0) return node;
+        else if (cmp < 0) return getNode(node.left, key);
+        else return getNode(node.right, key);
     }
 
     @Override
@@ -79,56 +52,108 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
     }
 
     /**
-     * 从根节点出发开始检测每个 node ：
-     * 1，if node 的子节点数量为 0 :
-     *      if key > node.key: key 放在 node.right，结束。
-     *      否则放在node.left，结束。
-     * 2，if node 的子节点数量为 1 :
-     *      将 key, node.key, node.child.key 进行排序，
-     *      创建新节点树 Tree(最大值, 中间值, 最小值)，替换原 node ，结束。
-     *      if key < node.key 且 node.left 不为空:
-     * 3，if node 的子节点数量为 2 :
-     *      if key > node.key: node = node.right
-     *      if key < node.key: node = node.left
+     * 插入新键值对，同时保持 AVL 树的平衡性。
+     * 如果 key 已存在，则更新其值。
      */
     @Override
     public void put(K key, V value) {
-        Node newNode = new Node(key, value);
-        if (size == 0) { // 处理初始化
-            node = newNode;
-            size += 1;
-        } else if (rebalance(node, newNode)) {
-            size += 1;
+        root = get(root, key, value);
+    }
+
+    private Node get(Node node, K key, V value) {
+        // 一些 base case
+        if (node == null) {
+            size++;
+            return new Node(key, value);
+        }
+        int cmp = key.compareTo(node.key);
+        if (cmp == 0) {
+            node.val = value;
+            return node;
+        }
+
+        // 递归主体
+        if (cmp < 0) {
+            node.left = get(node.left, key, value);
+        } else {
+            node.right = get(node.right, key, value);
+        }
+
+        // 递归完成后，开始rebalance操作。更新当前节点高度
+        updateHeight(node);
+
+        // 获取平衡因子：左边数的 height - 右边树的 height
+        // 如果 balance 的绝对值大于1，说明不平衡
+        int balanceFactor = getBalance(node);
+        boolean isBalanced = (balanceFactor <= 1 && balanceFactor >= -1);
+        boolean isLeftLeaning = (balanceFactor > 1);
+        if (isBalanced) return node;
+        if (isLeftLeaning) {
+            if (cmp > 0) {
+                node.left = rotate(node.left, true);
+            }
+            return rotate(node, false);
+        }
+        else {
+            if (cmp < 0) {
+                node.right = rotate(node.right, false);
+            }
+            return rotate(node, true);
         }
     }
 
-    private boolean rebalance(Node node, Node newNode) {
-        int children = node.children(); // 子节点数
-        int res = newNode.compareTo(node); // 新节点与当前节点的比较结果
-        if (res == 0) return false;
-        if (children == 2) { // 当 node 有两个子节点，继续递归，直到 node 子节点数不足2个。
-            if (res > 0) {
-                return rebalance(node.right, newNode);
-            } else {
-                return rebalance(node.left, newNode);
-            }
+    // 返回节点的高度
+    private int height(Node node) {
+        return node == null ? 0 : node.height;
+    }
+
+    // 计算节点的平衡因子（左子树高度 - 右子树高度）
+    private int getBalance(Node node) {
+        return node == null ? 0 : height(node.left) - height(node.right);
+    }
+
+    /**
+     * 通用旋转函数，根据参数决定进行左旋还是右旋。
+     * @param node 需要旋转的节点
+     * @param leftRotation 如果为 true，则进行左旋；否则进行右旋。
+     * @return 旋转后的子树根节点
+     */
+    private Node rotate(Node node, boolean leftRotation) {
+        if (leftRotation) {
+            // 左旋操作：将 node 的右子节点提升为新的根节点
+            //     1 (node)            2
+            //    / \                 / \
+            //   x   2 (child) -->   1   z
+            //      / \             / \
+            //    y    z           x   y
+            Node child = node.right;
+            node.right = child.left;
+            child.left = node;
+            updateHeight(node);
+            updateHeight(child);
+            return child;
+        } else {
+            // 右旋操作：将 node 的左子节点提升为新的根节点
+            //    (node) 2             1
+            //          / \           / \
+            // (child) 1   z   -->   x   2
+            //        / \               / \
+            //       x   y             y   z
+            Node child = node.left;
+            node.left = child.right;
+            child.right = node;
+            updateHeight(node);
+            updateHeight(child);
+            return child;
         }
-        // 开始重新分配节点链接情况
-        else if (children == 1) { // 当 node 只有一个子节点，进行平衡节点左右操作。
-            Node curCopy = new Node(node.key, node.val);
-            Object[] arr = new Object[]{newNode, curCopy, node.child()};
-            Arrays.sort(arr);
-            Node root = (Node) arr[1];
-            node.key = root.key;
-            node.val = root.val;
-            node.left = (Node) arr[0];
-            node.right = (Node) arr[2];
-            return true;
-        } else { // 当 node 没有子节点，直接加入。
-            if (res > 0) node.right = newNode;
-            else node.left = newNode;
-            return true;
-        }
+    }
+
+    /**
+     * 更新节点的高度。高度等于左右子树中较大者的高度加 1。
+     * @param node 要更新高度的节点
+     */
+    private void updateHeight(Node node) {
+        node.height = Math.max(height(node.left), height(node.right)) + 1;
     }
 
     @Override
@@ -155,7 +180,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
      * Prints an in-order diagram of the AVL tree. The tree is printed sideways (rotated 90° clockwise).
      */
     public void printInOrder() {
-        printInOrder(node, 0);
+        printInOrder(root, 0);
     }
 
     /**

@@ -31,7 +31,6 @@ public class InsertRandomSpeedTest {
             int N = waitForPositiveInt(input);
             timeRandomMap61B(new ULLMap<>(), N, L);
             timeRandomMap61B(new BSTMap<>(), N, L);
-            timeRandomMap61B(new AVLBSTMap<>(), N, L);
             timeRandomTreeMap(new TreeMap<>(), N, L);
             timeRandomHashMap(new HashMap<>(), N, L);
 
