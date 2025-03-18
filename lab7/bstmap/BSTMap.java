@@ -104,7 +104,6 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             node.right = insert(node.right, key, value);
         }
         // 递归完成后，开始rebalance操作。
-        node.updateHeight();
         return rebalanceNode(node);
     }
 
@@ -124,6 +123,8 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      * @return 经过平衡调整后的新子树根节点
      */
     private Node rebalanceNode(Node node) {
+        // 开始操作前先更新高度
+        node.updateHeight();
         if (node.isBalanced()) return node;
         if (node.isLeftLeaning()) {
             // 如果当前节点左倾（左边比右边重），则需要对该节点进行右旋操作
@@ -242,7 +243,6 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             node.right = removeNode(node.right, successor);
         }
 
-        node.updateHeight();
         return rebalanceNode(node);
     }
 
