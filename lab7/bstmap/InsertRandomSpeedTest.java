@@ -29,7 +29,7 @@ public class InsertRandomSpeedTest {
         do {
             System.out.print("\nEnter # strings to insert into the maps: ");
             int N = waitForPositiveInt(input);
-            timeRandomMap61B(new ULLMap<>(), N, L);
+//            timeRandomMap61B(new ULLMap<>(), N, L);
             timeRandomMap61B(new BSTMap<>(), N, L);
             timeRandomTreeMap(new TreeMap<>(), N, L);
             timeRandomHashMap(new HashMap<>(), N, L);

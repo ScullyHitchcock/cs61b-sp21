@@ -13,12 +13,37 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         private Node left;
         private Node right;
         private int height;  // AVL 树中每个节点的高度
-
         public Node(K key, V val) {
             this.key = key;
             this.val = val;
             this.height = 1;  // 新节点高度为 1
         }
+        // 更新当前节点的高度
+        public void updateHeight() {
+            int leftHeight = (left == null) ? 0 : left.height;
+            int rightHeight = (right == null) ? 0 : right.height;
+            this.height = Math.max(leftHeight, rightHeight) + 1;
+        }
+        // 计算当前节点的平衡因子
+        public int getBalance() {
+            int leftHeight = (left == null) ? 0 : left.height;
+            int rightHeight = (right == null) ? 0 : right.height;
+            return leftHeight - rightHeight;
+        }
+        // 如果左边数的高度与右边树的高度差在1内，则该树平衡。
+        public boolean isBalanced() {
+            int balance = getBalance();
+            return (balance <= 1 && balance >= -1);
+        }
+        // 如果左边数的高度比右边树的高度高2，则左倾。
+        public boolean isLeftLeaning() {
+            return (getBalance() > 1);
+        }
+        // 如果左边数的高度比右边树的高度低2，则右倾。
+        public boolean isRightLeaning() {
+            return (!isBalanced() && !isLeftLeaning());
+        }
+
     }
 
     @Override
@@ -57,10 +82,10 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      */
     @Override
     public void put(K key, V value) {
-        root = get(root, key, value);
+        root = insert(root, key, value);
     }
 
-    private Node get(Node node, K key, V value) {
+    private Node insert(Node node, K key, V value) {
         // 一些 base case
         if (node == null) {
             size++;
@@ -74,42 +99,27 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
         // 递归主体
         if (cmp < 0) {
-            node.left = get(node.left, key, value);
+            node.left = insert(node.left, key, value);
         } else {
-            node.right = get(node.right, key, value);
+            node.right = insert(node.right, key, value);
         }
 
         // 递归完成后，开始rebalance操作。更新当前节点高度
-        updateHeight(node);
+        node.updateHeight();
 
-        // 获取平衡因子：左边数的 height - 右边树的 height
-        // 如果 balance 的绝对值大于1，说明不平衡
-        int balanceFactor = getBalance(node);
-        boolean isBalanced = (balanceFactor <= 1 && balanceFactor >= -1);
-        boolean isLeftLeaning = (balanceFactor > 1);
-        if (isBalanced) return node;
-        if (isLeftLeaning) {
-            if (cmp > 0) {
+        if (node.isBalanced()) return node;
+        if (node.isLeftLeaning()) {
+            if (node.left.getBalance() < 0) {
                 node.left = rotate(node.left, true);
             }
             return rotate(node, false);
         }
         else {
-            if (cmp < 0) {
+            if (node.right.getBalance() > 0) {
                 node.right = rotate(node.right, false);
             }
             return rotate(node, true);
         }
-    }
-
-    // 返回节点的高度
-    private int height(Node node) {
-        return node == null ? 0 : node.height;
-    }
-
-    // 计算节点的平衡因子（左子树高度 - 右子树高度）
-    private int getBalance(Node node) {
-        return node == null ? 0 : height(node.left) - height(node.right);
     }
 
     /**
@@ -119,41 +129,35 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      * @return 旋转后的子树根节点
      */
     private Node rotate(Node node, boolean leftRotation) {
+        Node child;
         if (leftRotation) {
+            // 防御性检查：确保右子节点存在
+            if (node.right == null) return node;
             // 左旋操作：将 node 的右子节点提升为新的根节点
             //     1 (node)            2
             //    / \                 / \
             //   x   2 (child) -->   1   z
             //      / \             / \
             //    y    z           x   y
-            Node child = node.right;
+            child = node.right;
             node.right = child.left;
             child.left = node;
-            updateHeight(node);
-            updateHeight(child);
-            return child;
         } else {
+            // 防御性检查：确保左子节点存在
+            if (node.left == null) return node;
             // 右旋操作：将 node 的左子节点提升为新的根节点
             //    (node) 2             1
             //          / \           / \
             // (child) 1   z   -->   x   2
             //        / \               / \
             //       x   y             y   z
-            Node child = node.left;
+            child = node.left;
             node.left = child.right;
             child.right = node;
-            updateHeight(node);
-            updateHeight(child);
-            return child;
         }
-    }
-
-    /**
-     * 更新节点的高度。高度等于左右子树中较大者的高度加 1。
-     * @param node 要更新高度的节点
-     */
-    private void updateHeight(Node node) {
-        node.height = Math.max(height(node.left), height(node.right)) + 1;
+        node.updateHeight();
+        child.updateHeight();
+        return child;
     }
 
     @Override

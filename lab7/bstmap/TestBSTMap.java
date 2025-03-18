@@ -87,4 +87,212 @@ public class TestBSTMap {
         assertTrue(b.containsKey("hi"));
     }
 
+    // Helper method to get the root key using reflection
+    private int getRootKey(BSTMap<Integer, String> tree) throws Exception {
+        java.lang.reflect.Field rootField = BSTMap.class.getDeclaredField("root");
+        rootField.setAccessible(true);
+        Object root = rootField.get(tree);
+        java.lang.reflect.Field keyField = root.getClass().getDeclaredField("key");
+        keyField.setAccessible(true);
+        return (Integer) keyField.get(root);
+    }
+
+    // Helper method to get the left child's key using reflection
+    private int getLeftChildKey(BSTMap<Integer, String> tree) throws Exception {
+        java.lang.reflect.Field rootField = BSTMap.class.getDeclaredField("root");
+        rootField.setAccessible(true);
+        Object root = rootField.get(tree);
+        java.lang.reflect.Field leftField = root.getClass().getDeclaredField("left");
+        leftField.setAccessible(true);
+        Object leftChild = leftField.get(root);
+        java.lang.reflect.Field keyField = leftChild.getClass().getDeclaredField("key");
+        keyField.setAccessible(true);
+        return (Integer) keyField.get(leftChild);
+    }
+
+    // Helper method to get the right child's key using reflection
+    private int getRightChildKey(BSTMap<Integer, String> tree) throws Exception {
+        java.lang.reflect.Field rootField = BSTMap.class.getDeclaredField("root");
+        rootField.setAccessible(true);
+        Object root = rootField.get(tree);
+        java.lang.reflect.Field rightField = root.getClass().getDeclaredField("right");
+        rightField.setAccessible(true);
+        Object rightChild = rightField.get(root);
+        java.lang.reflect.Field keyField = rightChild.getClass().getDeclaredField("key");
+        keyField.setAccessible(true);
+        return (Integer) keyField.get(rightChild);
+    }
+
+    // Test for LL Rotation: Insert keys in descending order to trigger a right rotation.
+    @Test
+    public void testLLRotation() throws Exception {
+        BSTMap<Integer, String> tree = new BSTMap<>();
+        tree.put(30, "30");
+        tree.put(20, "20");
+        tree.put(10, "10");
+        // After LL imbalance, expected structure: root=20, left=10, right=30
+        assertEquals(20, getRootKey(tree));
+        assertEquals(10, getLeftChildKey(tree));
+        assertEquals(30, getRightChildKey(tree));
+    }
+
+    // Test for RR Rotation: Insert keys in ascending order to trigger a left rotation.
+    @Test
+    public void testRRRotation() throws Exception {
+        BSTMap<Integer, String> tree = new BSTMap<>();
+        tree.put(10, "10");
+        tree.put(20, "20");
+        tree.put(30, "30");
+        // After RR imbalance, expected structure: root=20, left=10, right=30
+        assertEquals(20, getRootKey(tree));
+        assertEquals(10, getLeftChildKey(tree));
+        assertEquals(30, getRightChildKey(tree));
+    }
+
+    // Test for LR Rotation: Insert keys to trigger left-right rotation.
+    @Test
+    public void testLRRotation() throws Exception {
+        BSTMap<Integer, String> tree = new BSTMap<>();
+        tree.put(30, "30");
+        tree.put(10, "10");
+        tree.put(20, "20");
+        // After LR imbalance, expected structure: root=20, left=10, right=30
+        assertEquals(20, getRootKey(tree));
+        assertEquals(10, getLeftChildKey(tree));
+        assertEquals(30, getRightChildKey(tree));
+    }
+
+    // Test for RL Rotation: Insert keys to trigger right-left rotation.
+    @Test
+    public void testRLRotation() throws Exception {
+        BSTMap<Integer, String> tree = new BSTMap<>();
+        tree.put(10, "10");
+        tree.put(30, "30");
+        tree.put(20, "20");
+        // After RL imbalance, expected structure: root=20, left=10, right=30
+        assertEquals(20, getRootKey(tree));
+        assertEquals(10, getLeftChildKey(tree));
+        assertEquals(30, getRightChildKey(tree));
+    }
+
+    // Helper method to get the left child's key of an arbitrary node using reflection
+    private int getLeftChildKeyOfNode(Object node) throws Exception {
+        java.lang.reflect.Field leftField = node.getClass().getDeclaredField("left");
+        leftField.setAccessible(true);
+        Object leftChild = leftField.get(node);
+        java.lang.reflect.Field keyField = leftChild.getClass().getDeclaredField("key");
+        keyField.setAccessible(true);
+        return (Integer) keyField.get(leftChild);
+    }
+
+    // Helper method to get the right child's key of an arbitrary node using reflection
+    private int getRightChildKeyOfNode(Object node) throws Exception {
+        java.lang.reflect.Field rightField = node.getClass().getDeclaredField("right");
+        rightField.setAccessible(true);
+        Object rightChild = rightField.get(node);
+        java.lang.reflect.Field keyField = rightChild.getClass().getDeclaredField("key");
+        keyField.setAccessible(true);
+        return (Integer) keyField.get(rightChild);
+    }
+
+    // Test for ascending order insertion of 5 elements:
+    // Insert keys: 10, 20, 30, 40, 50 (ascending order)
+    // Expected AVL tree structure after rebalancing:
+    //        20
+    //       /  \
+    //     10    40
+    //          /  \
+    //         30   50
+    @Test
+    public void testAscendingFiveElements() throws Exception {
+        BSTMap<Integer, String> tree = new BSTMap<>();
+        tree.put(10, "10");
+        tree.put(20, "20");
+        tree.put(30, "30");
+        tree.put(40, "40");
+        tree.put(50, "50");
+        // Check root, left, right keys from the tree's root
+        assertEquals(20, getRootKey(tree));
+        assertEquals(10, getLeftChildKey(tree));
+        assertEquals(40, getRightChildKey(tree));
+        // 获取 root.right 对象，并检查其左右子节点
+        java.lang.reflect.Field rootField = BSTMap.class.getDeclaredField("root");
+        rootField.setAccessible(true);
+        Object root = rootField.get(tree);
+        java.lang.reflect.Field rightField = root.getClass().getDeclaredField("right");
+        rightField.setAccessible(true);
+        Object rightChild = rightField.get(root);
+        assertEquals(30, getLeftChildKeyOfNode(rightChild));
+        assertEquals(50, getRightChildKeyOfNode(rightChild));
+    }
+
+    // Test for descending order insertion of 5 elements:
+    // Insert keys: 50, 40, 30, 20, 10 (descending order)
+    // Expected AVL tree structure after rebalancing:
+    //        40
+    //       /  \
+    //     20    50
+    //    /  \
+    //  10    30
+    @Test
+    public void testDescendingFiveElements() throws Exception {
+        BSTMap<Integer, String> tree = new BSTMap<>();
+        tree.put(50, "50");
+        tree.put(40, "40");
+        tree.put(30, "30");
+        tree.put(20, "20");
+        tree.put(10, "10");
+        // Check root, left, right keys from the tree's root
+        assertEquals(40, getRootKey(tree));
+        assertEquals(20, getLeftChildKey(tree));
+        assertEquals(50, getRightChildKey(tree));
+        // 获取 root.left 对象，并检查其左子节点
+        java.lang.reflect.Field rootField = BSTMap.class.getDeclaredField("root");
+        rootField.setAccessible(true);
+        Object root = rootField.get(tree);
+        java.lang.reflect.Field leftField = root.getClass().getDeclaredField("left");
+        leftField.setAccessible(true);
+        Object leftChild = leftField.get(root);
+        assertEquals(10, getLeftChildKeyOfNode(leftChild));
+        assertEquals(30, getRightChildKeyOfNode(leftChild));
+    }
+
+    // Test for descending order insertion of 7 elements:
+    // Insert keys: 70, 60, 50, 40, 30, 20, 10 (descending order)
+    // Expected AVL tree structure after rebalancing:
+    //          40
+    //       /     \
+    //     20       60
+    //    /  \      / \
+    //  10    30   50  70
+    @Test
+    public void testDescendingSevenElements() throws Exception {
+        BSTMap<Integer, String> tree = new BSTMap<>();
+        tree.put(70, "70");
+        tree.put(60, "60");
+        tree.put(50, "50");
+        tree.put(40, "40");
+        tree.put(30, "30");
+        tree.put(20, "20");
+        tree.put(10, "10");
+        // Check root, left, right keys from the tree's root
+        assertEquals(40, getRootKey(tree));
+        assertEquals(20, getLeftChildKey(tree));
+        assertEquals(60, getRightChildKey(tree));
+        // 获取 root.left 对象，并检查其左子节点
+        java.lang.reflect.Field rootField = BSTMap.class.getDeclaredField("root");
+        rootField.setAccessible(true);
+        Object root = rootField.get(tree);
+        java.lang.reflect.Field leftField = root.getClass().getDeclaredField("left");
+        leftField.setAccessible(true);
+        Object leftChild = leftField.get(root);
+        // 获取 root.right 对象，并检查其右子节点
+        java.lang.reflect.Field rightField = root.getClass().getDeclaredField("right");
+        rightField.setAccessible(true);
+        Object rightChild = rightField.get(root);
+        assertEquals(10, getLeftChildKeyOfNode(leftChild));
+        assertEquals(30, getRightChildKeyOfNode(leftChild));
+        assertEquals(50, getLeftChildKeyOfNode(rightChild));
+        assertEquals(70, getRightChildKeyOfNode(rightChild));
+    }
 }
