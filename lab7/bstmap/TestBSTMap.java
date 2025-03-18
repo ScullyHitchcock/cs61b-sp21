@@ -124,6 +124,11 @@ public class TestBSTMap {
     }
 
     // Test for LL Rotation: Insert keys in descending order to trigger a right rotation.
+    //        30
+    //       /
+    //     20   -->   20
+    //    /          /  \
+    //   10         10  30
     @Test
     public void testLLRotation() throws Exception {
         BSTMap<Integer, String> tree = new BSTMap<>();
@@ -137,6 +142,11 @@ public class TestBSTMap {
     }
 
     // Test for RR Rotation: Insert keys in ascending order to trigger a left rotation.
+    //    10
+    //      \
+    //       20    -->    20
+    //        \          /  \
+    //         30       10   30
     @Test
     public void testRRRotation() throws Exception {
         BSTMap<Integer, String> tree = new BSTMap<>();
@@ -150,6 +160,11 @@ public class TestBSTMap {
     }
 
     // Test for LR Rotation: Insert keys to trigger left-right rotation.
+    //    30
+    //    /
+    //   10    -->    20
+    //    \          / \
+    //    20        10  30
     @Test
     public void testLRRotation() throws Exception {
         BSTMap<Integer, String> tree = new BSTMap<>();
@@ -163,6 +178,11 @@ public class TestBSTMap {
     }
 
     // Test for RL Rotation: Insert keys to trigger right-left rotation.
+    //    10
+    //     \
+    //     30  -->   20
+    //     /        / \
+    //    20       10  30
     @Test
     public void testRLRotation() throws Exception {
         BSTMap<Integer, String> tree = new BSTMap<>();

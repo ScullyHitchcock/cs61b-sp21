@@ -43,7 +43,6 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         public boolean isRightLeaning() {
             return (!isBalanced() && !isLeftLeaning());
         }
-
     }
 
     @Override
@@ -104,18 +103,21 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             node.right = insert(node.right, key, value);
         }
 
-        // 递归完成后，开始rebalance操作。更新当前节点高度
+        // 递归完成后，开始rebalance操作。
         node.updateHeight();
-
         if (node.isBalanced()) return node;
         if (node.isLeftLeaning()) {
+            // 如果当前节点左倾（左边比右边重），则需要对该节点进行右旋操作
             if (node.left.getBalance() < 0) {
+                // 如果当前插入的key在node.child的右侧，则在node左旋之前，增加一步对child的左旋操作
                 node.left = rotate(node.left, true);
             }
             return rotate(node, false);
         }
         else {
+            // 如果当前节点右倾（右边比左边重），则需要对该节点进行左旋操作
             if (node.right.getBalance() > 0) {
+                // 如果当前插入的key在node.child的左侧，则在对node右旋前，增加一部对child的右旋操作
                 node.right = rotate(node.right, false);
             }
             return rotate(node, true);

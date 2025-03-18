@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
+/** 这是旧版本的BSTMap，保留仅供参考。 */
 public class OldBSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
 
     /* 内部类（二叉树结构）*/
