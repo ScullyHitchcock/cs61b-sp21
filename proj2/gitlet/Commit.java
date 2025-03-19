@@ -4,7 +4,10 @@ package gitlet;
 // TODO: 在这里导入所需的任何包
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.time.Instant;
+import java.util.HashMap;
 // TODO: You'll likely use this in this class
 // TODO: 你可能会在这个类中使用它
 
@@ -17,7 +20,7 @@ import java.time.Instant;
  *
  *  @author TODO
  */
-public class Commit {
+public class Commit implements Serializable {
     /**
      * TODO: add instance variables here.
      * TODO: 在这里添加实例变量。
@@ -29,11 +32,11 @@ public class Commit {
      * 说明这些变量表示什么，以及它们的用途。我们已经为 `message` 提供了一个示例。
      */
     private String message;
-    private Instant time;
     private String author;
-    private Commit parentCommit;
-    private File file;
-
+    private Instant time;
+    private String parentCommit;
+    private HashMap<String, String> trackedFile;
+    private String hashcode;
     /** The message of this Commit. */
     /** 这个提交的提交信息。 */
 
@@ -44,27 +47,56 @@ public class Commit {
 
     public Commit(String message,
                   Instant time,
-                  String author) {
+                  String author,
+                  String parentCommit,
+                  HashMap<String, String> file) {
         this.message = message;
         this.author = author;
         this.time = time;
+        this.parentCommit = parentCommit;
+        this.trackedFile = file;
+        this.hashcode = Utils.sha1(message, author, time);
     }
 
-    // 创建 initial commit 对象 iniCOmm：
-    //  1 contains no files
-    //  2 has the commit message: initial commit
-    //  3 It will have a single branch: master,
-    //    which initially points to this initial commit,
-    //    and master will be the current branch.
-    //  4 timestamp: 00:00:00 UTC, Thursday, 1 January 1970
-    public static Commit initializeCommit() {
-        // 创建initcommit
-        // 初始提交msg
-        String msg = "initial commit";
-        // 初始时间：1970-01-01T00:00:00Z
-        Instant initTime = Instant.EPOCH;
-        // 初始作者
-        String author = "User";
-        return new Commit(msg, initTime, author);
+    /* 创建 init commit */
+    public Commit() {
+        this.message = "initial commit";
+        this.time = Instant.EPOCH;
+        this.author = Repository.USER_NAME;
+        this.trackedFile = new HashMap<String, String>();
+        this.hashcode = Utils.sha1(message, author, time);
+    }
+
+    /* 写入 Commit 对象，返回哈希码文件名 */
+    public String saveCommit(File folder) {
+        File f = Utils.join(folder, hashcode);
+        try {
+            f.createNewFile();
+        } catch (IOException e) {
+            System.out.println("创建文件时发生错误：" + e.getMessage());
+        }
+        Utils.writeObject(f, this);
+        return hashcode;
+    }
+
+    public Commit cloneCommit() {
+        return new Commit(message, time, author, parentCommit, trackedFile);
+    }
+
+    public Commit childCommit(String msg, Instant time, String parent, String file, String blob) {
+        Commit child = new Commit(msg, time, author, parent, trackedFile);
+        child.trackedFile.put(file, blob);
+        return child;
+    }
+
+    public void setToBeHead() {
+        if (!Repository.HEAD.exists()) {
+            try {
+                Repository.HEAD.createNewFile();
+            } catch (IOException e) {
+                System.out.println("创建文件时发生错误：" + e.getMessage());
+            }
+        }
+        Utils.writeObject(Repository.HEAD, this);
     }
 }

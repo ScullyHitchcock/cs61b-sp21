@@ -25,6 +25,9 @@ public class Main {
                 Repository.addFile(fileName);
                 break;
             case "commit":
+                validateNumArgs(firstArg, args, 2);
+                String commitMassage = args[1];
+                Repository.commit(commitMassage);
                 break;
             case "rm":
                 break;
