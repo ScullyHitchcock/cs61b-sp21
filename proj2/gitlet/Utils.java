@@ -305,4 +305,21 @@ class Utils {
         System.out.printf(msg, args);
         System.out.println();
     }
+
+    static void createFile(File file) {
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            throw error("创建文件时发生错误：%s", e.getMessage());
+        }
+    }
+
+    static void clean(File dir) {
+        List<String> files = plainFilenamesIn(dir);
+        if (files != null) {
+            for (String file: files) {
+                join(dir, file).delete();
+            }
+        }
+    }
 }

@@ -70,11 +70,7 @@ public class Commit implements Serializable {
     public String save(File folder) {
         hashcode = Utils.sha1(Utils.serialize(trackedFile), parentCommit, message, Utils.serialize(time));
         File f = Utils.join(folder, hashcode);
-        try {
-            f.createNewFile();
-        } catch (IOException e) {
-            System.out.println("创建文件时发生错误：" + e.getMessage());
-        }
+        Utils.createFile(f);
         Utils.writeObject(f, this);
         return hashcode;
     }
@@ -91,16 +87,12 @@ public class Commit implements Serializable {
      * @return child commit
      */
     public Commit childCommit(String msg, Instant time, String parent) {
-        return new Commit(msg, time, author, parent, trackedFile);
+        return new Commit(msg, time, author, parent, new HashMap<>(trackedFile));
     }
 
     public void setToBeHead() {
         if (!Repository.HEAD.exists()) {
-            try {
-                Repository.HEAD.createNewFile();
-            } catch (IOException e) {
-                System.out.println("创建文件时发生错误：" + e.getMessage());
-            }
+            Utils.createFile(Repository.HEAD);
         }
         Utils.writeObject(Repository.HEAD, this);
     }
@@ -111,5 +103,9 @@ public class Commit implements Serializable {
 
     public void trackFile(String file, String blobName) {
         trackedFile.put(file, blobName);
+    }
+
+    public HashMap<String, String> getTrack() {
+        return trackedFile;
     }
 }

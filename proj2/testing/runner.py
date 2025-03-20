@@ -8,6 +8,11 @@ from shutil import copyfile, rmtree
 from math import log
 from glob import glob
 
+# 如果 REPO_DIR 没有设置，则自动设置一个默认值
+if 'REPO_DIR' not in environ:
+    environ['REPO_DIR'] = abspath(join(dirname(__file__), "..", ".."))
+
+
 SHORT_USAGE = """\
 Usage: python3 runner.py OPTIONS TEST.in ...
    OPTIONS may include

@@ -30,7 +30,8 @@ public class Main {
                 Repository.commit(commitMassage);
                 break;
             case "rm":
-                break;
+                validateNumArgs(firstArg, args, 2);
+                Repository.remove(args[1]);
             case "log":
                 break;
             case "global-log":
