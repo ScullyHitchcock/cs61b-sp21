@@ -55,7 +55,6 @@ public class Commit implements Serializable {
         this.time = time;
         this.parentCommit = parentCommit;
         this.trackedFile = file;
-        this.hashcode = Utils.sha1(message, author, time);
     }
 
     /* 创建 init commit */
@@ -64,11 +63,12 @@ public class Commit implements Serializable {
         this.time = Instant.EPOCH;
         this.author = Repository.USER_NAME;
         this.trackedFile = new HashMap<String, String>();
-        this.hashcode = Utils.sha1(message, author, time);
+        this.parentCommit = "empty";
     }
 
     /* 写入 Commit 对象，返回哈希码文件名 */
-    public String saveCommit(File folder) {
+    public String save(File folder) {
+        hashcode = Utils.sha1(Utils.serialize(trackedFile), parentCommit, message, Utils.serialize(time));
         File f = Utils.join(folder, hashcode);
         try {
             f.createNewFile();
@@ -83,10 +83,15 @@ public class Commit implements Serializable {
         return new Commit(message, time, author, parentCommit, trackedFile);
     }
 
-    public Commit childCommit(String msg, Instant time, String parent, String file, String blob) {
-        Commit child = new Commit(msg, time, author, parent, trackedFile);
-        child.trackedFile.put(file, blob);
-        return child;
+    /**
+     * 创建子 commit
+     * @param msg commit 信息
+     * @param time 当前时间
+     * @param parent 上一个 commit 的hashcode
+     * @return child commit
+     */
+    public Commit childCommit(String msg, Instant time, String parent) {
+        return new Commit(msg, time, author, parent, trackedFile);
     }
 
     public void setToBeHead() {
@@ -98,5 +103,13 @@ public class Commit implements Serializable {
             }
         }
         Utils.writeObject(Repository.HEAD, this);
+    }
+
+    public String getHashcode() {
+        return hashcode;
+    }
+
+    public void trackFile(String file, String blobName) {
+        trackedFile.put(file, blobName);
     }
 }

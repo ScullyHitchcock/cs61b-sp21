@@ -2,6 +2,8 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
 
 import static gitlet.Utils.*;
 
@@ -45,10 +47,14 @@ public class Repository {
         GITLET_DIR.mkdir();
         // 新建 commits 文件夹
         COMMITS.mkdir();
+        // 创建暂存区 staging area。
+        STAGING_AREA.mkdir();
+        // 创建 blobs 区
+        BLOBS.mkdir();
         // 创建初始 commit
         Commit initCommit = new Commit();
         // 将 initCommit 写入文件，获得哈希码文件名
-        String initHash = initCommit.saveCommit(COMMITS);
+        String initHash = initCommit.save(COMMITS);
         // 设置为 head commit
         initCommit.setToBeHead();
     }
@@ -62,20 +68,13 @@ public class Repository {
      * @param fileName
      */
     public static void addFile(String fileName) {
-        // 1，创建暂存区 staging area。
-        if (!STAGING_AREA.exists()) {
-            STAGING_AREA.mkdir();
-        }
-        // 2，创建 blobs 区
-        if (!BLOBS.exists()) {
-            BLOBS.mkdir();
-        }
         // 3，读取 fileName 文件以及文件内容 content
         File file = join(CWD, fileName);
         if (!file.exists()) {
             throw Utils.error("File does not exist.");
         }
         String content = Utils.readContentsAsString(file);
+
         // 4，以文件名+内容为输入创建一串 hascode
         String hashCode = Utils.sha1(fileName, content);
         // 5，检测 blobs 区中是否已经存在此 hashcode，如果存在则跳过，如果不存在则
@@ -97,21 +96,34 @@ public class Repository {
             } catch (IOException e) {
                 System.out.println("创建文件时发生错误：" + e.getMessage());
             }
-            Utils.writeContents(stagingFile, hashCode);
         }
+        // 7，staging 文件内容为 blob 区文件的哈希码文件名
+        Utils.writeContents(stagingFile, hashCode);
     }
 
     public static void commit(String commitMassage) {
-        // 1，打开 head 文件，读取 Commit 对象
-        // 2，读取 staging 文件名 filename 和内容 content
-        // 2，创建新 commit：
-        //      commit msg = commitMassage
-        //      time = 现在时间
-        //      parent = head.hascode
-        //      file = filename
-        //      blob = content
-        // 3，保存 commit
-        // 4，设置为 head
+        // 1，读取 staging 区中的所有文件名
+        List<String> files = Utils.plainFilenamesIn(STAGING_AREA);
+        if (files == null) {
+            System.out.println("No changes added to the commit.");
+            return;
+        }
+        // 2，如果 staging不为空，则读取 head commit
+        Commit head = Utils.readObject(HEAD, Commit.class);
+        // 3，以 head 为 parent 创建子 commit
+        Commit newCommit = head.childCommit(
+                commitMassage, // commit message
+                Instant.now(), // time
+                head.getHashcode()); // parent 的 hashcode 文件名
+        // 4，追踪 staging 区中的所有文件然后保存到本地，最后删除 staging 区中文件
+        for (String file: files) {
+            File filePath = join(STAGING_AREA, file);
+            String blobName = Utils.readContentsAsString(filePath);
+            newCommit.trackFile(file, blobName);
+            filePath.delete();
+        }
+        String hashName = newCommit.save(COMMITS);
+        newCommit.setToBeHead();
     }
 
     /* TODO: fill in the rest of this class. */
