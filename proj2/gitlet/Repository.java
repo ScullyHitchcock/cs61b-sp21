@@ -4,6 +4,7 @@ import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -173,25 +174,42 @@ public class Repository {
 
     }
 
+    private static void printLog(Commit commit) {
+        Instant time = commit.getTime();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z", Locale.US)
+                .withZone(ZoneId.systemDefault());
+        String formattedTime = formatter.format(time);
+        String commitMsg = commit.getMessage();
+        String hashcode = commit.getHashcode();
+
+        Utils.message("===");
+        Utils.message("commit %s", hashcode);
+        Utils.message("Date: %s", formattedTime);
+        Utils.message("%s", commitMsg);
+        System.out.println();
+
+    }
+
+    private static List<Commit> getCommit() {
+        List<String> commitNames = Utils.plainFilenamesIn(COMMITS);
+        List<Commit> commits = new ArrayList<>();
+        if (commitNames != null) {
+            for (String commitName: commitNames) {
+                if (commitName.equals("head")) continue;
+                Commit commit = Utils.readObject(join(COMMITS, commitName), Commit.class);
+                commits.addLast(commit);
+            }
+        }
+        return commits;
+    }
+
     public static void log() {
         List<String> commits = Utils.plainFilenamesIn(COMMITS);
         Commit cur = Utils.readObject(HEAD, Commit.class);
 
         while (true) {
             // Print current commit details
-            Instant time = cur.getTime();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z", Locale.US)
-                    .withZone(ZoneId.systemDefault());
-            String formattedTime = formatter.format(time);
-            String commitMsg = cur.getMessage();
-            String hashcode = cur.getHashcode();
-
-            Utils.message("===");
-            Utils.message("commit %s", hashcode);
-            Utils.message("Date: %s", formattedTime);
-            Utils.message("%s", commitMsg);
-            System.out.println();
-
+            printLog(cur);
             // Determine the parent commit
             String parentHash = cur.getParentCommit();
             if (parentHash.equals("empty") || !commits.contains(parentHash)) {
@@ -200,6 +218,26 @@ public class Repository {
 
             File parentFile = join(COMMITS, parentHash);
             cur = Utils.readObject(parentFile, Commit.class);
+        }
+    }
+
+    public static void globalLog() {
+        for (Commit commit: getCommit()) {
+            printLog(commit);
+        }
+    }
+
+    public static void find(String msg) {
+        boolean found = false;
+        for (Commit commit: getCommit()) {
+            String commitMsg = commit.getMessage();
+            if (msg.equals(commitMsg)) {
+                found = true;
+                System.out.println(commit.getHashcode());
+            }
+        }
+        if (!found) {
+            throw Utils.error("Found no commit with that message.");
         }
     }
 }
