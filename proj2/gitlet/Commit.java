@@ -34,7 +34,6 @@ public class Commit implements Serializable {
      * 说明这些变量表示什么，以及它们的用途。我们已经为 `message` 提供了一个示例。
      */
     private String message;
-    private String author;
     private Instant time;
     private String parentCommit;
     private HashMap<String, String> trackedFile;
@@ -49,11 +48,9 @@ public class Commit implements Serializable {
 
     public Commit(String message,
                   Instant time,
-                  String author,
                   String parentCommit,
                   HashMap<String, String> file) {
         this.message = message;
-        this.author = author;
         this.time = time;
         this.parentCommit = parentCommit;
         this.trackedFile = file;
@@ -63,7 +60,6 @@ public class Commit implements Serializable {
     public Commit() {
         this.message = "initial commit";
         this.time = Instant.EPOCH;
-        this.author = Repository.USER_NAME;
         this.trackedFile = new HashMap<String, String>();
         this.parentCommit = "empty";
     }
@@ -77,10 +73,6 @@ public class Commit implements Serializable {
         return hashcode;
     }
 
-    public Commit cloneCommit() {
-        return new Commit(message, time, author, parentCommit, trackedFile);
-    }
-
     /**
      * 创建子 commit
      * @param msg commit 信息
@@ -89,7 +81,7 @@ public class Commit implements Serializable {
      * @return child commit
      */
     public Commit childCommit(String msg, Instant time, String parent) {
-        return new Commit(msg, time, author, parent, new HashMap<>(trackedFile));
+        return new Commit(msg, time, parent, new HashMap<>(trackedFile));
     }
 
     public void setToBeHead() {
@@ -111,9 +103,6 @@ public class Commit implements Serializable {
         return message;
     }
 
-    public String getAuthor() {
-        return author;
-    }
 
     public String getParentCommit() {
         return parentCommit;

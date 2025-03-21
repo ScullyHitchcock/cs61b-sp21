@@ -40,7 +40,6 @@ public class Repository {
     public static final File COMMITS = join(GITLET_DIR, "commits");
 
     public static final File HEAD = join(COMMITS, "head");
-    public static final String USER_NAME = "User";
 
     /** "init" 命令：初始化 gitlet
      * 创建.gitlet目录和目录下的 commits 文件夹
