@@ -3,6 +3,8 @@ package gitlet;
 // TODO: any imports you need here
 // TODO: 在这里导入所需的任何包
 
+import jh61b.junit.In;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -101,8 +103,28 @@ public class Commit implements Serializable {
         return hashcode;
     }
 
+    public Instant getTime() {
+        return time;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getParentCommit() {
+        return parentCommit;
+    }
+
     public void trackFile(String file, String blobName) {
         trackedFile.put(file, blobName);
+    }
+
+    public void untrackFile(String file) {
+        trackedFile.remove(file);
     }
 
     public HashMap<String, String> getTrack() {

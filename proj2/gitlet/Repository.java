@@ -2,8 +2,11 @@ package gitlet;
 
 import java.io.File;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import static gitlet.Utils.*;
 
@@ -29,7 +32,8 @@ public class Repository {
     /** .gitlet 结构 */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     public static final File STAGING = join(GITLET_DIR, "staging");
-    public static final File STAGING_FILES = join(STAGING, "files");
+    public static final File ADDITION = join(STAGING, "files");
+    public static final File REMOVAL = join(STAGING, "removal");
     public static final File STAGING_BLOBS = join(STAGING, "blobs");
     public static final File BLOBS = join(GITLET_DIR, "blobs");
     public static final File COMMITS = join(GITLET_DIR, "commits");
@@ -53,7 +57,8 @@ public class Repository {
         // 创建暂存区 staging area。
         STAGING.mkdir();
         STAGING_BLOBS.mkdir();
-        STAGING_FILES.mkdir();
+        ADDITION.mkdir();
+        REMOVAL.mkdir();
         // 创建 blobs 区
         BLOBS.mkdir();
         // 创建初始 commit
@@ -93,8 +98,8 @@ public class Repository {
             Utils.writeContents(blob, content);
         }
 
-        // 4 判断 STAGING_FILES 是否已经存在 fileName 文件，无则创建写入 hashcode
-        File stagingFile = join(STAGING_FILES, fileName);
+        // 4 判断 ADDITION 是否已经存在 fileName 文件，无则创建写入 hashcode
+        File stagingFile = join(ADDITION, fileName);
         if (!stagingFile.exists()) {
             Utils.createFile(stagingFile);
         }
@@ -102,13 +107,14 @@ public class Repository {
     }
 
     public static void commit(String commitMessage) {
-        // 1，读取 STAGING_FILES 区中的所有文件名
-        List<String> stagingFiles = Utils.plainFilenamesIn(STAGING_FILES);
-        if (stagingFiles.isEmpty()) {
+        // 1，读取 ADDITION 、REMOVAL 区中的所有文件名
+        List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
+        List<String> removals = Utils.plainFilenamesIn(REMOVAL);
+        if ((stagingFiles == null) && (removals == null)) {
             System.out.println("No changes added to the commit.");
             return;
         }
-        // 2，如果 staging不为空，则读取 head commit
+        // 2，如果 staging 不为空，则读取 head commit
         Commit head = Utils.readObject(HEAD, Commit.class);
         // 3，以 head 为 parent 创建子 commit
         Commit newCommit = head.childCommit(
@@ -116,36 +122,84 @@ public class Repository {
                 Instant.now(), // time
                 head.getHashcode()); // parent 的 hashcode 文件名
 
-        for (String file: stagingFiles) {
-            // 4，newCommit 追踪 STAGING_FILES 区中的文件
-            File filePath = join(STAGING_FILES, file);
-            String fileHash = Utils.readContentsAsString(filePath);
-            newCommit.trackFile(file, fileHash);
+        if (stagingFiles != null) {
+            for (String file: stagingFiles) {
+                // 4，newCommit 追踪 ADDITION 区中的文件
+                File filePath = join(ADDITION, file);
+                String fileHash = Utils.readContentsAsString(filePath);
+                newCommit.trackFile(file, fileHash);
 
-            // 5，BLOB 区复制 STAGING_BLOBS 中 file 文件所指向的 blob 文件
-            File stagingBlob = join(STAGING_BLOBS, fileHash);
-            String content = Utils.readContentsAsString(stagingBlob);
-            File blob = join(BLOBS, fileHash);
-            if (!blob.exists()) {
-                Utils.createFile(blob);
-                Utils.writeContents(blob, content);
+                // 5，BLOB 区复制 STAGING_BLOBS 中 file 文件所指向的 blob 文件
+                Utils.copyFile(fileHash, STAGING_BLOBS, BLOBS);
             }
         }
-        // 6，删除 STAGING_FILE 和 STAGING_BLOB 中的暂存文件
-        Utils.clean(STAGING_FILES);
+        if (removals != null) {
+            // 6，如果 REMOVAL 区中有标记删除的文件，则在 newCommit 中取消跟踪
+            for (String file: removals) {
+                newCommit.untrackFile(file);
+            }
+        }
+        // 6，删除 ADDITION、REMOVAL 和 STAGING_BLOB 中的暂存文件
+        Utils.clean(ADDITION);
         Utils.clean(STAGING_BLOBS);
+        Utils.clean(REMOVAL);
         // 保存 newCommit，重新设置为 head
         String hashName = newCommit.save(COMMITS);
         newCommit.setToBeHead();
     }
 
     public static void remove(String fileName) {
-        // 如果文件既不在暂存区里，也没有被当前提交追踪，那么就打印错误信息：No reason to remove the file.
-        // 若文件当前在暂存区中（staged for addition）：
-        //      则将其从暂存区移除。
-        //      若文件在当前提交（HEAD）中被追踪（tracked）：
-        //          将它标记为待删除（staged for removal），也就是告诉 Gitlet 在下次提交时把它从版本库的追踪列表里移除。
-        //          同时，从工作目录中删除该文件（如果它还存在的话）。
-        //      否则不要删除
+        // 只要在暂存区：就把文件从暂存区中移除。
+        // 只要被 HEAD 追踪：就将文件标记为待删除，并删除工作目录中的该文件。
+        Commit head = Utils.readObject(HEAD, Commit.class);
+        HashMap<String, String> trackingFiles = head.getTrack();
+        List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
+
+        boolean inTrackingFiles = trackingFiles.containsKey(fileName);
+        boolean inStagingFiles = (stagingFiles != null && stagingFiles.contains(fileName));
+
+        if (!inStagingFiles && !inTrackingFiles) {
+            throw Utils.error("No reason to remove the file.");
+        }
+
+        if (inTrackingFiles) {
+            Utils.createFile(join(REMOVAL, fileName));
+            Utils.restrictedDelete(join(CWD, fileName));
+        }
+
+        if (inStagingFiles) {
+            join(ADDITION, fileName).delete();
+        }
+
+    }
+
+    public static void log() {
+        List<String> commits = Utils.plainFilenamesIn(COMMITS);
+        Commit cur = Utils.readObject(HEAD, Commit.class);
+
+        while (true) {
+            // Print current commit details
+            Instant time = cur.getTime();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z", Locale.US)
+                    .withZone(ZoneId.systemDefault());
+            String formattedTime = formatter.format(time);
+            String commitMsg = cur.getMessage();
+            String hashcode = cur.getHashcode();
+
+            Utils.message("===");
+            Utils.message("commit %s", hashcode);
+            Utils.message("Date: %s", formattedTime);
+            Utils.message("%s", commitMsg);
+            System.out.println();
+
+            // Determine the parent commit
+            String parentHash = cur.getParentCommit();
+            if (parentHash.equals("empty") || !commits.contains(parentHash)) {
+                break;
+            }
+
+            File parentFile = join(COMMITS, parentHash);
+            cur = Utils.readObject(parentFile, Commit.class);
+        }
     }
 }

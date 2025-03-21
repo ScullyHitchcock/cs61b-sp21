@@ -21,18 +21,19 @@ public class Main {
                 break;
             case "add":
                 validateNumArgs(firstArg, args, 2);
-                String fileName = args[1];
-                Repository.addFile(fileName);
+                Repository.addFile(args[1]);
                 break;
             case "commit":
                 validateNumArgs(firstArg, args, 2);
-                String commitMassage = args[1];
-                Repository.commit(commitMassage);
+                Repository.commit(args[1]);
                 break;
             case "rm":
                 validateNumArgs(firstArg, args, 2);
                 Repository.remove(args[1]);
+                break;
             case "log":
+                validateNumArgs(firstArg, args, 1);
+                Repository.log();
                 break;
             case "global-log":
                 break;

@@ -322,4 +322,14 @@ class Utils {
             }
         }
     }
+
+    static void copyFile(String fileName, File oldDir, File newDir) {
+        File oldFile = join(oldDir, fileName);
+        String content = readContentsAsString(oldFile);
+        File newFile = join(newDir, fileName);
+        if (!newFile.exists()) {
+            createFile(newFile);
+            writeContents(newFile, content);
+        }
+    }
 }
