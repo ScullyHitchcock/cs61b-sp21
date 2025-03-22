@@ -4,10 +4,7 @@ import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -30,16 +27,22 @@ public class Repository {
 
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
-    /** .gitlet 结构 */
-    public static final File GITLET_DIR = join(CWD, ".gitlet");
-    public static final File STAGING = join(GITLET_DIR, "staging");
-    public static final File ADDITION = join(STAGING, "files");
-    public static final File REMOVAL = join(STAGING, "removal");
-    public static final File STAGING_BLOBS = join(STAGING, "blobs");
+        /** .gitlet 结构 */
+        public static final File GITLET_DIR = join(CWD, ".gitlet");
+            /** 暂存区 */
+            public static final File STAGING = join(GITLET_DIR, "staging");
+                public static final File ADDITION = join(STAGING, "files");
+                public static final File REMOVAL = join(STAGING, "removal");
+                public static final File STAGING_BLOBS = join(STAGING, "blobs");
+    /** 分支引用 */
+    public static final File REFS = join(GITLET_DIR, "refs");
+        /** main分支 */
+        public static final File MAIN = join(REFS, "main");
+    /** 文件快照 */
     public static final File BLOBS = join(GITLET_DIR, "blobs");
+    /** commit 对象 */
     public static final File COMMITS = join(GITLET_DIR, "commits");
-
-    public static final File HEAD = join(COMMITS, "head");
+    public static final File COMMIT_GRAPH = join(CWD, "commitGraph");
 
     /** "init" 命令：初始化 gitlet
      * 创建.gitlet目录和目录下的 commits 文件夹
@@ -61,12 +64,13 @@ public class Repository {
         REMOVAL.mkdir();
         // 创建 blobs 区
         BLOBS.mkdir();
-        // 创建初始 commit
-        Commit initCommit = Commit.createInitCommit();
-        // 将 initCommit 写入文件，获得哈希码文件名
-        String initHash = initCommit.save(COMMITS);
-        // 设置为 head commit
-        initCommit.setToBeHead();
+        // 创建CommitGraph，保存
+        CommitGraph graph = new CommitGraph();
+        graph.save();
+    }
+
+    private static CommitGraph openGraph() {
+        return Utils.readObject(COMMIT_GRAPH, CommitGraph.class);
     }
 
     /** 描述：将文件当前版本复制到暂存区（请参阅 commit 命令的描述）。
@@ -84,26 +88,27 @@ public class Repository {
             throw Utils.error("File does not exist.");
         }
         String content = Utils.readContentsAsString(file);
-        String hashCode = Utils.sha1(fileName, content);
+        String fileHash = Utils.sha1(fileName, content);
 
         // 2 打开 head，读取正在追踪的文件以及其 blob 是否与当前文件相同，如果相同则返回
-        Commit head = Utils.readObject(HEAD, Commit.class);
-        HashMap<String, String> tracked = head.getTrack();
-        if (tracked.containsKey(fileName) && tracked.get(fileName).equals(hashCode)) return;
+        CommitGraph graph = openGraph();
+        Commit head = graph.getHeadCommit();
+        HashMap<String, String> tracked = head.getTrackedFile();
+        if (tracked.containsKey(fileName) && tracked.get(fileName).equals(fileHash)) return;
 
-        // 3 判断 STAGING_BLOBS 是否存在 hashcode 文件，无则创建写入 content
-        File blob = join(STAGING_BLOBS, hashCode);
+        // 3 判断 STAGING_BLOBS 是否存在 fileHash 文件，无则创建写入 content
+        File blob = join(STAGING_BLOBS, fileHash);
         if (!blob.exists()) {
             Utils.createFile(blob);
             Utils.writeContents(blob, content);
         }
 
-        // 4 判断 ADDITION 是否已经存在 fileName 文件，无则创建写入 hashcode
+        // 4 判断 ADDITION 是否已经存在 fileName 文件，无则创建写入 fileHash
         File stagingFile = join(ADDITION, fileName);
         if (!stagingFile.exists()) {
             Utils.createFile(stagingFile);
         }
-        Utils.writeContents(stagingFile, hashCode);
+        Utils.writeContents(stagingFile, fileHash);
     }
 
     public static void commit(String commitMessage) {
@@ -115,12 +120,13 @@ public class Repository {
             return;
         }
         // 2，如果 staging 不为空，则读取 head commit
-        Commit head = Utils.readObject(HEAD, Commit.class);
+        CommitGraph graph = openGraph();
+        Commit head = graph.getHeadCommit();
         // 3，以 head 为 parent 创建子 commit
         Commit newCommit = head.childCommit(
                 commitMessage, // commit message
-                Instant.now(), // time
-                head.getHashcode()); // parent 的 hashcode 文件名
+                Instant.now() // time
+                );
 
         if (stagingFiles != null) {
             for (String file: stagingFiles) {
@@ -136,7 +142,9 @@ public class Repository {
         if (removals != null) {
             // 6，如果 REMOVAL 区中有标记删除的文件，则在 newCommit 中取消跟踪
             for (String file: removals) {
-                newCommit.untrackFile(file);
+                if (newCommit.isTracking(file)) {
+                    newCommit.untrackFile(file);
+                }
             }
         }
         // 6，删除 ADDITION、REMOVAL 和 STAGING_BLOB 中的暂存文件
@@ -144,15 +152,17 @@ public class Repository {
         Utils.clean(STAGING_BLOBS);
         Utils.clean(REMOVAL);
         // 保存 newCommit，重新设置为 head
-        String hashName = newCommit.save(COMMITS);
-        newCommit.setToBeHead();
+        graph.addCommit(newCommit);
+        graph.save();
     }
 
     public static void remove(String fileName) {
         // 只要在暂存区：就把文件从暂存区中移除。
         // 只要被 HEAD 追踪：就将文件标记为待删除，并删除工作目录中的该文件。
-        Commit head = Utils.readObject(HEAD, Commit.class);
-        HashMap<String, String> trackingFiles = head.getTrack();
+
+        CommitGraph graph = openGraph();
+        Commit head = graph.getHeadCommit();
+        HashMap<String, String> trackingFiles = head.getTrackedFile();
         List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
 
         boolean inTrackingFiles = trackingFiles.containsKey(fileName);
@@ -203,32 +213,36 @@ public class Repository {
     }
 
     public static void log() {
-        List<String> commits = Utils.plainFilenamesIn(COMMITS);
-        Commit cur = Utils.readObject(HEAD, Commit.class);
+        CommitGraph graph = openGraph();
+        Commit head = graph.getHeadCommit();
+        Commit cur = head;
 
         while (true) {
             // Print current commit details
             printLog(cur);
             // Determine the parent commit
-            String parentHash = cur.getParentCommit();
-            if (parentHash.equals("empty") || !commits.contains(parentHash)) {
+            String parentHash = graph.ParentHash(cur.getHashcode());
+            if (parentHash == null || !graph.contains(parentHash)) {
                 break;
             }
-
-            File parentFile = join(COMMITS, parentHash);
-            cur = Utils.readObject(parentFile, Commit.class);
+            cur = graph.getCommit(parentHash);
         }
     }
 
     public static void globalLog() {
-        for (Commit commit: getCommit()) {
-            printLog(commit);
+        CommitGraph graph = openGraph();
+        HashSet<String> allCommits = graph.getAllCommits();
+        for (String commitHash: allCommits) {
+            printLog(graph.getCommit(commitHash));
         }
     }
 
     public static void find(String msg) {
         boolean found = false;
-        for (Commit commit: getCommit()) {
+        CommitGraph graph = openGraph();
+        HashSet<String> allCommits = graph.getAllCommits();
+        for (String commitHash: allCommits) {
+            Commit commit = graph.getCommit(commitHash);
             String commitMsg = commit.getMessage();
             if (msg.equals(commitMsg)) {
                 found = true;
