@@ -52,10 +52,6 @@ public class CommitGraph implements Serializable {
         return commitSet;
     }
 
-    public String getHash(Commit commit) {
-        return commit.createHashcode();
-    }
-
     public boolean contains(String hashcode) {
         return commitSet.contains(hashcode);
     }
@@ -64,7 +60,7 @@ public class CommitGraph implements Serializable {
     public String ParentHash(String hashcode) {
         if (!commitSet.contains(hashcode)) return null;
         Commit commit = getCommit(hashcode);
-        return commit.getParentCommits();
+        return commit.getParentHash();
     }
 
     /* 添加一个 Commit 对象到 commit 图中 */
@@ -79,16 +75,20 @@ public class CommitGraph implements Serializable {
     }
 
     /* 创建新分支引用 */
-    public void createNewBranch(String branchName) {
+    public boolean createNewBranch(String branchName) {
+        if (branchRef.containsKey(branchName)) return false;
         String headCommitHash = branchRef.get(headRef);
         branchRef.put(branchName, headCommitHash);
+        return true;
     }
 
     /* 切换当前 head 指针到指定分支上 */
-    public void changeHead(String branchName) {
+    public boolean changeHead(String branchName) {
         if (branchRef.containsKey(branchName)) {
             headRef = branchName;
+            return true;
         }
+        return false;
     }
 
     /* 将指定分支的 Commit 合并到当前活跃分支上 */

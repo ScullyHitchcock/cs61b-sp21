@@ -1,12 +1,10 @@
 package gitlet;
 
-import org.checkerframework.checker.units.qual.C;
-
 import java.io.File;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.TreeMap;
 
 public class Commit implements Serializable {
     /**
@@ -19,21 +17,19 @@ public class Commit implements Serializable {
     private String message;
     private Instant time;
     private ArrayList<String> parentCommits;
-    private HashMap<String, String> trackedFile;
+    private TreeMap<String, String> trackedFile;
     private String hashcode;
 
     // 构造方法，创建新的 Commit 对象
     public Commit(String message,
                   Instant time,
                   ArrayList<String> parentCommits,
-                  HashMap<String, String> trackedFile) {
+                  TreeMap<String, String> trackedFile) {
         this.message = message;
         this.time = time;
         // 如果父提交列表为 null，则初始化为空列表
         this.parentCommits = (parentCommits != null) ? parentCommits : new ArrayList<>();
-        this.trackedFile = (trackedFile != null) ? trackedFile : new HashMap<>();
-        // 计算哈希码时考虑父提交列表、文件内容、信息和时间
-        this.hashcode = createHashcode();
+        this.trackedFile = (trackedFile != null) ? trackedFile : new TreeMap<>();
     }
 
     public String createHashcode() {
@@ -46,7 +42,7 @@ public class Commit implements Serializable {
 
     // 用于创建初始提交
     public static Commit createInitCommit() {
-        return new Commit("initial commit", Instant.EPOCH, new ArrayList<>(), new HashMap<>());
+        return new Commit("initial commit", Instant.EPOCH, new ArrayList<>(), new TreeMap<>());
     }
 
     // 创建子提交对象
@@ -55,7 +51,7 @@ public class Commit implements Serializable {
     // 3，设置当前提交为其父提交（可扩展为合并时添加多个父提交）
     public Commit childCommit(String msg, Instant time) {
         ArrayList<String> newParents = new ArrayList<>();
-        HashMap<String, String> newTrackedFiles = new HashMap<>(this.trackedFile);
+        TreeMap<String, String> newTrackedFiles = new TreeMap<>(this.trackedFile);
         Commit child = new Commit(msg, time, newParents, newTrackedFiles);
         child.addParent(this.hashcode);
         return child;
@@ -70,7 +66,8 @@ public class Commit implements Serializable {
         return hashcode;
     }
 
-    public String getParentCommits() {
+    /* 返回 commit 的第一父 commit */
+    public String getParentHash() {
         if (parentCommits.isEmpty()) return null;
         return parentCommits.get(0);
     }
@@ -83,7 +80,11 @@ public class Commit implements Serializable {
         return time;
     }
 
-    public HashMap<String, String> getTrackedFile() {
+    public String getHash() {
+        return hashcode;
+    }
+
+    public TreeMap<String, String> getTrackedFile() {
         return trackedFile;
     }
 

@@ -34,10 +34,6 @@ public class Repository {
                 public static final File ADDITION = join(STAGING, "files");
                 public static final File REMOVAL = join(STAGING, "removal");
                 public static final File STAGING_BLOBS = join(STAGING, "blobs");
-    /** 分支引用 */
-    public static final File REFS = join(GITLET_DIR, "refs");
-        /** main分支 */
-        public static final File MAIN = join(REFS, "main");
     /** 文件快照 */
     public static final File BLOBS = join(GITLET_DIR, "blobs");
     /** commit 对象 */
@@ -93,8 +89,14 @@ public class Repository {
         // 2 打开 head，读取正在追踪的文件以及其 blob 是否与当前文件相同，如果相同则返回
         CommitGraph graph = openGraph();
         Commit head = graph.getHeadCommit();
-        HashMap<String, String> tracked = head.getTrackedFile();
+        TreeMap<String, String> tracked = head.getTrackedFile();
         if (tracked.containsKey(fileName) && tracked.get(fileName).equals(fileHash)) return;
+
+        // 3 打开 REMOVAL 区检查此文件是否之前在这里，如果在则删除
+        List<String> removals = Utils.plainFilenamesIn(REMOVAL);
+        if (removals != null && removals.contains(fileName)) {
+            join(REMOVAL, fileName).delete();
+        }
 
         // 3 判断 STAGING_BLOBS 是否存在 fileHash 文件，无则创建写入 content
         File blob = join(STAGING_BLOBS, fileHash);
@@ -162,7 +164,7 @@ public class Repository {
 
         CommitGraph graph = openGraph();
         Commit head = graph.getHeadCommit();
-        HashMap<String, String> trackingFiles = head.getTrackedFile();
+        TreeMap<String, String> trackingFiles = head.getTrackedFile();
         List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
 
         boolean inTrackingFiles = trackingFiles.containsKey(fileName);
@@ -183,35 +185,7 @@ public class Repository {
 
     }
 
-    private static void printLog(Commit commit) {
-        Instant time = commit.getTime();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z", Locale.US)
-                .withZone(ZoneId.systemDefault());
-        String formattedTime = formatter.format(time);
-        String commitMsg = commit.getMessage();
-        String hashcode = commit.getHashcode();
-
-        Utils.message("===");
-        Utils.message("commit %s", hashcode);
-        Utils.message("Date: %s", formattedTime);
-        Utils.message("%s", commitMsg);
-        System.out.println();
-
-    }
-
-    private static List<Commit> getCommit() {
-        List<String> commitNames = Utils.plainFilenamesIn(COMMITS);
-        List<Commit> commits = new ArrayList<>();
-        if (commitNames != null) {
-            for (String commitName: commitNames) {
-                if (commitName.equals("head")) continue;
-                Commit commit = Utils.readObject(join(COMMITS, commitName), Commit.class);
-                commits.addLast(commit);
-            }
-        }
-        return commits;
-    }
-
+    /* 按顺序打印从 HEAD 所在的分支的 commit 回溯到 init commit 的提交信息（不打印其他分支） */
     public static void log() {
         CommitGraph graph = openGraph();
         Commit head = graph.getHeadCommit();
@@ -229,12 +203,30 @@ public class Repository {
         }
     }
 
+    /* 无序打印所有分支的所有 commit */
     public static void globalLog() {
         CommitGraph graph = openGraph();
         HashSet<String> allCommits = graph.getAllCommits();
         for (String commitHash: allCommits) {
             printLog(graph.getCommit(commitHash));
         }
+    }
+
+    /* 打印单个 commit 信息 */
+    private static void printLog(Commit commit) {
+        Instant time = commit.getTime();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z", Locale.US)
+                .withZone(ZoneId.systemDefault());
+        String formattedTime = formatter.format(time);
+        String commitMsg = commit.getMessage();
+        String hashcode = commit.getHashcode();
+
+        Utils.message("===");
+        Utils.message("commit %s", hashcode);
+        Utils.message("Date: %s", formattedTime);
+        Utils.message("%s", commitMsg);
+        System.out.println();
+
     }
 
     public static void find(String msg) {
