@@ -68,7 +68,7 @@ public class Main {
      */
     public static void validateNumArgs(String cmd, String[] args, int n) {
         if (args.length != n) {
-            throw Utils.error("Invalid number of arguments for: %s.", cmd);
+            throw Utils.error("Incorrect operands.");
         }
     }
 }

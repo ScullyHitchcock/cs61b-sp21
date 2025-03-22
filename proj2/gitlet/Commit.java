@@ -3,10 +3,7 @@ package gitlet;
 // TODO: any imports you need here
 // TODO: 在这里导入所需的任何包
 
-import jh61b.junit.In;
-
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashMap;
@@ -41,27 +38,16 @@ public class Commit implements Serializable {
     /** The message of this Commit. */
     /** 这个提交的提交信息。 */
 
-
-
     /* TODO: fill in the rest of this class. */
     /* TODO: 补全这个类的其余部分。 */
 
-    public Commit(String message,
-                  Instant time,
-                  String parentCommit,
-                  HashMap<String, String> file) {
-        this.message = message;
-        this.time = time;
-        this.parentCommit = parentCommit;
-        this.trackedFile = file;
-    }
-
-    /* 创建 init commit */
-    public Commit() {
-        this.message = "initial commit";
-        this.time = Instant.EPOCH;
-        this.trackedFile = new HashMap<String, String>();
-        this.parentCommit = "empty";
+    public static Commit createInitCommit() {
+        Commit initCommit = new Commit();
+        initCommit.message = "initial commit";
+        initCommit.time = Instant.EPOCH;
+        initCommit.trackedFile = new HashMap<>();
+        initCommit.parentCommit = "empty";
+        return initCommit;
     }
 
     /* 写入 Commit 对象，返回哈希码文件名 */
@@ -81,7 +67,12 @@ public class Commit implements Serializable {
      * @return child commit
      */
     public Commit childCommit(String msg, Instant time, String parent) {
-        return new Commit(msg, time, parent, new HashMap<>(trackedFile));
+        Commit child = new Commit();
+        child.message = msg;
+        child.time = time;
+        child.parentCommit = parent;
+        child.trackedFile = new HashMap<>(trackedFile);
+        return child;
     }
 
     public void setToBeHead() {

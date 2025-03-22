@@ -62,7 +62,7 @@ public class Repository {
         // 创建 blobs 区
         BLOBS.mkdir();
         // 创建初始 commit
-        Commit initCommit = new Commit();
+        Commit initCommit = Commit.createInitCommit();
         // 将 initCommit 写入文件，获得哈希码文件名
         String initHash = initCommit.save(COMMITS);
         // 设置为 head commit
