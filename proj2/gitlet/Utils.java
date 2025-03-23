@@ -81,7 +81,7 @@ class Utils {
     /** Deletes FILE if it exists and is not a directory. Returns true
      *  if FILE was deleted, and false otherwise. Refuses to delete FILE
      *  and throws IllegalArgumentException unless the directory designated by
-     *  FILE also contains a directory named .gitlet.
+     *  FILE also containsCommit a directory named .gitlet.
      *
      *  如果 FILE 存在且不是目录，则删除 FILE。若成功删除，返回 true，否则返回 false。
      *  如果 FILE 目录下不存在 .gitlet 目录，则拒绝删除 FILE 并抛出 IllegalArgumentException 异常。
@@ -100,7 +100,7 @@ class Utils {
     /** Deletes the file named FILE if it exists and is not a directory.
      *  Returns true if FILE was deleted, and false otherwise. Refuses
      *  to delete FILE and throws IllegalArgumentException unless the
-     *  directory designated by FILE also contains a directory named .gitlet.
+     *  directory designated by FILE also containsCommit a directory named .gitlet.
      *
      *  如果 FILE 存在且不是目录，则删除名为 FILE 的文件。若成功删除，返回 true，否则返回 false。
      *  如果 FILE 目录下不存在 .gitlet 目录，则拒绝删除 FILE 并抛出 IllegalArgumentException 异常。

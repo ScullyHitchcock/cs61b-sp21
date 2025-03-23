@@ -65,7 +65,7 @@ public class Repository {
         manager.save();
     }
 
-    private static CommitManager openManager() {
+    private static CommitManager callManager() {
         return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
     }
 
@@ -87,7 +87,7 @@ public class Repository {
         String fileHash = Utils.sha1(fileName, content);
 
         // 2 打开 head，读取正在追踪的文件以及其 blob 是否与当前文件相同，如果相同则返回
-        CommitManager manager = openManager();
+        CommitManager manager = callManager();
         Commit head = manager.getHeadCommit();
         TreeMap<String, String> tracked = head.getTrackedFile();
         if (tracked.containsKey(fileName) && tracked.get(fileName).equals(fileHash)) return;
@@ -122,7 +122,7 @@ public class Repository {
             return;
         }
         // 2，如果 staging 不为空，则读取 head commit
-        CommitManager manager = openManager();
+        CommitManager manager = callManager();
         Commit head = manager.getHeadCommit();
         // 3，以 head 为 parent 创建子 commit
         Commit newCommit = head.childCommit(
@@ -162,7 +162,7 @@ public class Repository {
         // 只要在暂存区：就把文件从暂存区中移除。
         // 只要被 HEAD 追踪：就将文件标记为待删除，并删除工作目录中的该文件。
 
-        CommitManager manager = openManager();
+        CommitManager manager = callManager();
         Commit head = manager.getHeadCommit();
         TreeMap<String, String> trackingFiles = head.getTrackedFile();
         List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
@@ -187,7 +187,7 @@ public class Repository {
 
     /* 按顺序打印从 HEAD 所在的分支的 commit 回溯到 init commit 的提交信息（不打印其他分支） */
     public static void log() {
-        CommitManager manager = openManager();
+        CommitManager manager = callManager();
         Commit head = manager.getHeadCommit();
         Commit cur = head;
 
@@ -196,7 +196,7 @@ public class Repository {
             printLog(cur);
             // Determine the parent commit
             String parentHash = manager.ParentHash(cur.getHashcode());
-            if (parentHash == null || !manager.contains(parentHash)) {
+            if (parentHash == null || !manager.containsCommit(parentHash)) {
                 break;
             }
             cur = manager.getCommit(parentHash);
@@ -205,7 +205,7 @@ public class Repository {
 
     /* 无序打印所有分支的所有 commit */
     public static void globalLog() {
-        CommitManager manager = openManager();
+        CommitManager manager = callManager();
         HashSet<String> allCommits = manager.getAllCommits();
         for (String commitHash: allCommits) {
             printLog(manager.getCommit(commitHash));
@@ -231,7 +231,7 @@ public class Repository {
 
     public static void find(String msg) {
         boolean found = false;
-        CommitManager manager = openManager();
+        CommitManager manager = callManager();
         HashSet<String> allCommits = manager.getAllCommits();
         for (String commitHash: allCommits) {
             Commit commit = manager.getCommit(commitHash);
@@ -244,5 +244,53 @@ public class Repository {
         if (!found) {
             throw Utils.error("Found no commit with that message.");
         }
+    }
+
+    public static void checkout(String[] checkoutArgs) {
+        if (checkoutArgs.length == 1) {
+            // checkout [branch name]
+            // Takes all files in the commit at the head of the given branch, and puts them in the working directory,
+            // overwriting the versions of the files that are already there if they exist.
+            // Also, at the end of this command, the given branch will now be considered the current branch (HEAD).
+            // Any files that are tracked in the current branch but are not present in the checked-out branch are deleted.
+            // The staging area is cleared, unless the checked-out branch is the current branch (see Failure cases below).
+
+
+        } else if (checkoutArgs.length == 2) {
+            // checkout -- [file name]
+            // Takes the version of the file as it exists in the head commit and puts it in the working directory,
+            // overwriting the version of the file that’s already there if there is one.
+            // The new version of the file is not staged.
+
+        } else {
+            // checkout [commit id] -- [file name]
+            // Takes the version of the file as it exists in the commit with the given id,
+            // and puts it in the working directory,
+            // overwriting the version of the file that’s already there if there is one.
+            // The new version of the file is not staged.
+
+        }
+    }
+
+    public static void branch(String branch) {
+        CommitManager manager = callManager();
+        boolean created =  manager.createNewBranch(branch);
+        if (created) {
+            manager.changeHeadTo(branch);
+        } else {
+            throw Utils.error("A branch with that name already exists.");
+        }
+    }
+
+    public static void rmBranch(String branch) {
+        CommitManager manager = callManager();
+        if (branch.equals(manager.headBranch())) {
+            throw Utils.error("Cannot remove the current branch.");
+        }
+        if (!manager.containsBranch(branch)) {
+            throw Utils.error("A branch with that name does not exist.");
+        }
+        manager.removeBranch(branch);
+        manager.save();
     }
 }
