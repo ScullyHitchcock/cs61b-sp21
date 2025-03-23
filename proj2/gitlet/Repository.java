@@ -38,7 +38,7 @@ public class Repository {
     public static final File BLOBS = join(GITLET_DIR, "blobs");
     /** commit 对象 */
     public static final File COMMITS = join(GITLET_DIR, "commits");
-    public static final File COMMIT_GRAPH = join(CWD, "commitGraph");
+    public static final File COMMIT_MANAGER = join(GITLET_DIR, "manager");
 
     /** "init" 命令：初始化 gitlet
      * 创建.gitlet目录和目录下的 commits 文件夹
@@ -60,13 +60,13 @@ public class Repository {
         REMOVAL.mkdir();
         // 创建 blobs 区
         BLOBS.mkdir();
-        // 创建CommitGraph，保存
-        CommitGraph graph = new CommitGraph();
-        graph.save();
+        // 创建CommitManager，保存
+        CommitManager manager = new CommitManager();
+        manager.save();
     }
 
-    private static CommitGraph openGraph() {
-        return Utils.readObject(COMMIT_GRAPH, CommitGraph.class);
+    private static CommitManager openManager() {
+        return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
     }
 
     /** 描述：将文件当前版本复制到暂存区（请参阅 commit 命令的描述）。
@@ -87,8 +87,8 @@ public class Repository {
         String fileHash = Utils.sha1(fileName, content);
 
         // 2 打开 head，读取正在追踪的文件以及其 blob 是否与当前文件相同，如果相同则返回
-        CommitGraph graph = openGraph();
-        Commit head = graph.getHeadCommit();
+        CommitManager manager = openManager();
+        Commit head = manager.getHeadCommit();
         TreeMap<String, String> tracked = head.getTrackedFile();
         if (tracked.containsKey(fileName) && tracked.get(fileName).equals(fileHash)) return;
 
@@ -117,13 +117,13 @@ public class Repository {
         // 1，读取 ADDITION 、REMOVAL 区中的所有文件名
         List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
         List<String> removals = Utils.plainFilenamesIn(REMOVAL);
-        if ((stagingFiles == null) && (removals == null)) {
+        if ((stagingFiles.isEmpty()) && (removals.isEmpty())) {
             System.out.println("No changes added to the commit.");
             return;
         }
         // 2，如果 staging 不为空，则读取 head commit
-        CommitGraph graph = openGraph();
-        Commit head = graph.getHeadCommit();
+        CommitManager manager = openManager();
+        Commit head = manager.getHeadCommit();
         // 3，以 head 为 parent 创建子 commit
         Commit newCommit = head.childCommit(
                 commitMessage, // commit message
@@ -154,16 +154,16 @@ public class Repository {
         Utils.clean(STAGING_BLOBS);
         Utils.clean(REMOVAL);
         // 保存 newCommit，重新设置为 head
-        graph.addCommit(newCommit);
-        graph.save();
+        manager.addCommit(newCommit);
+        manager.save();
     }
 
     public static void remove(String fileName) {
         // 只要在暂存区：就把文件从暂存区中移除。
         // 只要被 HEAD 追踪：就将文件标记为待删除，并删除工作目录中的该文件。
 
-        CommitGraph graph = openGraph();
-        Commit head = graph.getHeadCommit();
+        CommitManager manager = openManager();
+        Commit head = manager.getHeadCommit();
         TreeMap<String, String> trackingFiles = head.getTrackedFile();
         List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
 
@@ -187,28 +187,28 @@ public class Repository {
 
     /* 按顺序打印从 HEAD 所在的分支的 commit 回溯到 init commit 的提交信息（不打印其他分支） */
     public static void log() {
-        CommitGraph graph = openGraph();
-        Commit head = graph.getHeadCommit();
+        CommitManager manager = openManager();
+        Commit head = manager.getHeadCommit();
         Commit cur = head;
 
         while (true) {
             // Print current commit details
             printLog(cur);
             // Determine the parent commit
-            String parentHash = graph.ParentHash(cur.getHashcode());
-            if (parentHash == null || !graph.contains(parentHash)) {
+            String parentHash = manager.ParentHash(cur.getHashcode());
+            if (parentHash == null || !manager.contains(parentHash)) {
                 break;
             }
-            cur = graph.getCommit(parentHash);
+            cur = manager.getCommit(parentHash);
         }
     }
 
     /* 无序打印所有分支的所有 commit */
     public static void globalLog() {
-        CommitGraph graph = openGraph();
-        HashSet<String> allCommits = graph.getAllCommits();
+        CommitManager manager = openManager();
+        HashSet<String> allCommits = manager.getAllCommits();
         for (String commitHash: allCommits) {
-            printLog(graph.getCommit(commitHash));
+            printLog(manager.getCommit(commitHash));
         }
     }
 
@@ -231,10 +231,10 @@ public class Repository {
 
     public static void find(String msg) {
         boolean found = false;
-        CommitGraph graph = openGraph();
-        HashSet<String> allCommits = graph.getAllCommits();
+        CommitManager manager = openManager();
+        HashSet<String> allCommits = manager.getAllCommits();
         for (String commitHash: allCommits) {
-            Commit commit = graph.getCommit(commitHash);
+            Commit commit = manager.getCommit(commitHash);
             String commitMsg = commit.getMessage();
             if (msg.equals(commitMsg)) {
                 found = true;

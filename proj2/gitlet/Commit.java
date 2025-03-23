@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
-public class Commit implements Serializable {
+public class Commit implements Serializable, Dumpable {
     /**
      * @message 提交信息
      * @time 提交时间
@@ -110,7 +110,24 @@ public class Commit implements Serializable {
         return hashcode;
     }
 
+    /* 未完成 */
     public Commit merge(Commit otherCommit) {
         return null;
+    }
+
+    @Override
+    public void dump() {
+        Utils.message("=== Commit Dump ===");
+        Utils.message("Hashcode: %s", hashcode);
+        Utils.message("Message: %s", message);
+        Utils.message("Time: %s", time);
+        Utils.message("Parent Commits:");
+        for (String parent : parentCommits) {
+            Utils.message("  - %s", parent);
+        }
+        Utils.message("Tracked Files:");
+        for (String file : trackedFile.keySet()) {
+            Utils.message("  %s -> %s", file, trackedFile.get(file));
+        }
     }
 }

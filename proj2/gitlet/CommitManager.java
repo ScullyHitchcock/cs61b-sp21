@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class CommitGraph implements Serializable {
+public class CommitManager implements Serializable {
     // 使用哈希集合，只存放 Commit 对象的哈希值
     private HashSet<String> commitSet;
 
@@ -21,7 +21,7 @@ public class CommitGraph implements Serializable {
      * 2，创建 initCommit
      * 4，将 initCommit 加入 commitSet 中，main 指向它
      */
-    public CommitGraph() {
+    public CommitManager() {
         commitSet = new HashSet<>();
         branchRef = new HashMap<>();
         headRef = "main";
@@ -30,10 +30,10 @@ public class CommitGraph implements Serializable {
     }
 
     public void save() {
-        if (!Repository.COMMIT_GRAPH.exists()) {
-            Utils.createFile(Repository.COMMIT_GRAPH);
+        if (!Repository.COMMIT_MANAGER.exists()) {
+            Utils.createFile(Repository.COMMIT_MANAGER);
         }
-        Utils.writeObject(Repository.COMMIT_GRAPH, this);
+        Utils.writeObject(Repository.COMMIT_MANAGER, this);
     }
 
     /* 返回当前 head 指针指向的 Commit 对象 */
