@@ -56,6 +56,11 @@ public class CommitManager implements Serializable {
         return getCommit(headHash);
     }
 
+    public Commit getBranchCommit(String branch) {
+        String branchCommitHash = branchs.get(branch);
+        return getCommit(branchCommitHash);
+    }
+
     /* 根据哈希值访问对应的 Commit 对象数据 */
     public Commit getCommit(String hashcode) {
         File commitFile = Utils.join(Repository.COMMITS, hashcode);

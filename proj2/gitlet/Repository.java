@@ -65,7 +65,7 @@ public class Repository {
         manager.save();
     }
 
-    private static CommitManager callManager() {
+    public static CommitManager callManager() {
         return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
     }
 
@@ -254,7 +254,35 @@ public class Repository {
             // Also, at the end of this command, the given branch will now be considered the current branch (HEAD).
             // Any files that are tracked in the current branch but are not present in the checked-out branch are deleted.
             // The staging area is cleared, unless the checked-out branch is the current branch (see Failure cases below).
+            String branch = checkoutArgs[0];
+            CommitManager manager = callManager();
+            Commit headCommit = manager.getHeadCommit();
+            Commit branchCommit = manager.getBranchCommit(branch);
 
+            // 如果你输入的分支名在分支列表中找不到，直接报错，不要进行任何操作。
+            if (!manager.containsBranch(branch)) {
+                throw Utils.error("No such branch exists.");
+            }
+            // 如果你试图切换到你已经在的分支，没有必要做任何事，直接报错退出。
+            if (branch.equals(manager.headBranch())) {
+                throw Utils.error("No need to checkout the current branch.");
+            }
+            // 如果工作目录中有某个文件，它：
+            //	•	没有被当前分支追踪（就是你之前没 add、也没 commit），
+            //	•	但是在目标分支中存在该文件（会被 checkout 覆盖），
+            //→ 这种情况下要报错退出，不能执行 checkout。防止覆盖用户未保存的修改。
+            CWDManager cwd = new CWDManager();
+            HashMap<String, String> unStagingFiles = cwd.unStagingFiles();
+            for (String file : unStagingFiles.keySet()) {
+                if (branchCommit.getTrackedFile().containsKey(file)) {
+                    throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
+                }
+            }
+
+            // 以上异常检查通过后，从“目标分支的最新 commit”中提取所有文件，把它们放进工作目录（CWD）中，如果工作目录已经存在这些文件，就覆盖它们。
+            // 这个命令执行完后，当前分支（HEAD）会切换成你指定的分支。
+            // 如果有些文件被当前分支追踪、但在目标分支的最新 commit 中没有这些文件，那么这些文件会从工作目录中删除。
+            // 切换分支时 staging 区会被清空（除非你 checkout 的正好是当前分支）。
 
         } else if (checkoutArgs.length == 2) {
             // checkout -- [file name]
@@ -277,6 +305,7 @@ public class Repository {
         boolean created =  manager.createNewBranch(branch);
         if (created) {
             manager.changeHeadTo(branch);
+            manager.save();
         } else {
             throw Utils.error("A branch with that name already exists.");
         }

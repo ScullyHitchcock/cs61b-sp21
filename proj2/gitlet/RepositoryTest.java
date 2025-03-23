@@ -318,9 +318,9 @@ public class RepositoryTest {
     @Test
     public void testCreateNewBranch() {
         // 进行两次提交，msg 分别为“commitA”和“commitB”
-        // 创建新分支，并切换 HEAD
+        // branch("new branch") 创建新分支
         // 提交一次“commitC”
-        // 切换到原分支 main
+        // checkout("main") 切换到原分支 main
         // 提交一次“commitD”
         // log输出，应该得到大概 D -> B -> A -> initial commit 四个提交的输出
         // global-log输出，应该得到总共5无序的提交输出
