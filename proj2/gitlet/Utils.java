@@ -332,4 +332,25 @@ class Utils {
             writeContents(newFile, content);
         }
     }
+
+    static String fileHash(String fileName) {
+        String content = readContentsAsString(join(Repository.CWD, fileName));
+        return sha1(fileName, content);
+    }
+
+    /* 在文件夹 dir 中创建文件 fileName，写入内容 content，如果文件已存在，则覆盖原内容 */
+    static void createOrOverride(File dir, String fileName, String newContent) {
+        File file = Utils.join(dir, fileName);
+        if (!Utils.plainFilenamesIn(dir).contains(fileName)) {
+            Utils.createFile(file);
+        }
+        Utils.writeContents(file, newContent);
+    }
+
+    /* 在文件夹 dir 中删除文件 fileName */
+    static void deleteFileFrom(File dir, String fileName) {
+        if (Utils.join(dir, fileName).exists()) {
+            Utils.join(dir, fileName).delete();
+        }
+    }
 }

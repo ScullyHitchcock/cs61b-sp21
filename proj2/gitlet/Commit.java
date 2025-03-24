@@ -18,7 +18,7 @@ public class Commit implements Serializable, Dumpable {
     private Instant time;
     private ArrayList<String> parentCommits;
     private TreeMap<String, String> trackedFile;
-    private String hashcode;
+    private String id;
 
     // 构造方法，创建新的 Commit 对象
     public Commit(String message,
@@ -49,11 +49,11 @@ public class Commit implements Serializable, Dumpable {
     // 1，设置元信息
     // 2，复制其追踪的文件
     // 3，设置当前提交为其父提交（可扩展为合并时添加多个父提交）
-    public Commit childCommit(String msg, Instant time) {
+    public Commit childCommit(String msg) {
         ArrayList<String> newParents = new ArrayList<>();
         TreeMap<String, String> newTrackedFiles = new TreeMap<>(this.trackedFile);
-        Commit child = new Commit(msg, time, newParents, newTrackedFiles);
-        child.addParent(this.hashcode);
+        Commit child = new Commit(msg, Instant.now(), newParents, newTrackedFiles);
+        child.addParent(this.id);
         return child;
     }
 
@@ -62,8 +62,8 @@ public class Commit implements Serializable, Dumpable {
         parentCommits.add(parentHash);
     }
 
-    public String getHashcode() {
-        return hashcode;
+    public String getId() {
+        return id;
     }
 
     /* 返回 commit 的第一父 commit */
@@ -80,34 +80,46 @@ public class Commit implements Serializable, Dumpable {
         return time;
     }
 
-    public String getHash() {
-        return hashcode;
-    }
-
     public TreeMap<String, String> getTrackedFile() {
         return trackedFile;
     }
 
+    /* 跟踪文件，创建并储存文件的 blob */
     public void trackFile(String file, String blobName) {
         trackedFile.put(file, blobName);
+        String content = Utils.readContentsAsString(Utils.join(Repository.CWD, file));
+        Utils.createOrOverride(Repository.BLOBS, blobName, content);
     }
 
+    /* 取消跟踪文件 */
     public void untrackFile(String file) {
         trackedFile.remove(file);
     }
 
+    /* 判断 commit 是否正在追踪文件 fileName */
     public boolean isTracking(String fileName) {
         return trackedFile.containsKey(fileName);
     }
 
+    /* 如果 commit 正在追踪的文件 fileName 没有变化，返回 true */
+    public boolean isTrackingSame(String fileName) {
+        String fileHash = Utils.fileHash(fileName);
+        return (fileHash.equals(trackedFile.get(fileName)));
+    }
+
+     /* 如果 commit 正在追踪的文件 fileName 发生变化，返回 true */
+    public boolean isTrackingDifferent(String fileName) {
+        return (isTracking(fileName) && !isTrackingSame(fileName));
+    }
+
     // 将当前 Commit 对象写入文件
     public String save() {
-        // 重新计算 hashcode 以确保内容正确
-        hashcode = createHashcode();
-        File f = Utils.join(Repository.COMMITS, hashcode);
+        // 重新计算 id 以确保内容正确
+        id = createHashcode();
+        File f = Utils.join(Repository.COMMITS, id);
         Utils.createFile(f);
         Utils.writeObject(f, this);
-        return hashcode;
+        return id;
     }
 
     /* 未完成 */
@@ -118,7 +130,7 @@ public class Commit implements Serializable, Dumpable {
     @Override
     public void dump() {
         Utils.message("=== Commit Dump ===");
-        Utils.message("Hashcode: %s", hashcode);
+        Utils.message("Hashcode: %s", id);
         Utils.message("Message: %s", message);
         Utils.message("Time: %s", time);
         Utils.message("Parent Commits:");

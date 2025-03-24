@@ -61,9 +61,10 @@ public class CommitManager implements Serializable {
         return getCommit(branchCommitHash);
     }
 
-    /* 根据哈希值访问对应的 Commit 对象数据 */
-    public Commit getCommit(String hashcode) {
-        File commitFile = Utils.join(Repository.COMMITS, hashcode);
+    /* 根据哈希值访问对应的 Commit 对象数据，如果不存在，返回 null */
+    public Commit getCommit(String id) {
+        File commitFile = Utils.join(Repository.COMMITS, id);
+        if (!commitFile.exists()) return null;
         return Utils.readObject(commitFile, Commit.class);
     }
 
