@@ -1,7 +1,5 @@
 package gitlet;
 
-import net.sf.saxon.expr.Component;
-
 import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -31,17 +29,15 @@ public class Repository {
     public static final File CWD = new File(System.getProperty("user.dir"));
         /** .gitlet 结构 */
         public static final File GITLET_DIR = join(CWD, ".gitlet");
-            /** 暂存区 */
-            public static final File STAGING = join(GITLET_DIR, "staging");
-                public static final File ADDITION = join(STAGING, "files");
-                public static final File REMOVAL = join(STAGING, "removal");
-                public static final File STAGING_BLOBS = join(STAGING, "blobs");
-    /** 文件快照 */
-    public static final File BLOBS = join(GITLET_DIR, "blobs");
-    /** commit 对象 */
-    public static final File COMMITS = join(GITLET_DIR, "commits");
-    public static final File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
-    public static final File FILE_MANAGER = join(GITLET_DIR, "fileManager");
+            /** 暂存文件快照 */
+            public static final File STAGING_BLOBS = join(GITLET_DIR, "staging");
+            /** 永久文件快照 */
+            public static final File BLOBS = join(GITLET_DIR, "blobs");
+            /** commit 对象 */
+            public static final File COMMITS = join(GITLET_DIR, "commits");
+            /** commit管理器和文件管理器 */
+            public static final File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
+            public static final File FILE_MANAGER = join(GITLET_DIR, "fileManager");
 
     /** "init" 命令：初始化 gitlet
      * 创建.gitlet目录和目录下的 commits 文件夹
@@ -52,16 +48,9 @@ public class Repository {
         if (GITLET_DIR.exists()) {
             throw Utils.error("A Gitlet version-control system already exists in the current directory.");
         }
-        // 新建 .gitlet 文件夹
         GITLET_DIR.mkdir();
-        // 新建 commits 文件夹
         COMMITS.mkdir();
-        // 创建暂存区 staging area。
-        STAGING.mkdir();
         STAGING_BLOBS.mkdir();
-        ADDITION.mkdir();
-        REMOVAL.mkdir();
-        // 创建 blobs 区
         BLOBS.mkdir();
         // 创建CommitManager，保存
         CommitManager manager = new CommitManager();
@@ -71,10 +60,10 @@ public class Repository {
         fileManager.save();
     }
 
-    public static CommitManager callCommitManager() {
+    private static CommitManager callCommitManager() {
         return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
     }
-    public static FileManager callFileManager() {
+    private static FileManager callFileManager() {
         return Utils.readObject(FILE_MANAGER, FileManager.class);
     }
 
@@ -389,14 +378,14 @@ public class Repository {
     }
 
     public static void rmBranch(String branch) {
-        CommitManager manager = callCommitManager();
-        if (branch.equals(manager.headBranch())) {
+        CommitManager commitManager = callCommitManager();
+        if (branch.equals(commitManager.headBranch())) {
             throw Utils.error("Cannot remove the current branch.");
         }
-        if (!manager.containsBranch(branch)) {
+        if (!commitManager.containsBranch(branch)) {
             throw Utils.error("A branch with that name does not exist.");
         }
-        manager.removeBranch(branch);
-        manager.save();
+        commitManager.removeBranch(branch);
+        commitManager.save();
     }
 }

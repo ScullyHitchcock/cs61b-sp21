@@ -87,8 +87,7 @@ public class Commit implements Serializable, Dumpable {
     /* 跟踪文件，创建并储存文件的 blob */
     public void trackFile(String file, String blobName) {
         trackedFile.put(file, blobName);
-        String content = Utils.readContentsAsString(Utils.join(Repository.CWD, file));
-        Utils.createOrOverride(Repository.BLOBS, blobName, content);
+        Utils.copyFile(blobName, Repository.STAGING_BLOBS, Repository.BLOBS);
     }
 
     /* 取消跟踪文件 */
