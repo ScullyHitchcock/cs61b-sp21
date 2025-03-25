@@ -338,7 +338,9 @@ class Utils {
     }
 
     static String fileHash(String fileName) {
-        String content = readContentsAsString(join(Repository.CWD, fileName));
+        File file = join(Repository.CWD, fileName);
+        if (!file.exists()) return null;
+        String content = readContentsAsString(file);
         return sha1(fileName, content);
     }
 

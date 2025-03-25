@@ -203,7 +203,9 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-
+        if (!headCommit.isTracking(fileName) && !fileManager.isStaging(fileName)) {
+            throw Utils.error("No reason to remove the file.");
+        }
         if (headCommit.isTracking(fileName)) {
             fileManager.addToRemoval(fileName);
             Utils.deleteFileFrom(CWD, fileName);
@@ -372,7 +374,6 @@ public class Repository {
         CommitManager manager = callCommitManager();
         boolean created =  manager.createNewBranch(branch);
         if (created) {
-            manager.changeHeadTo(branch);
             manager.save();
         } else {
             throw Utils.error("A branch with that name already exists.");

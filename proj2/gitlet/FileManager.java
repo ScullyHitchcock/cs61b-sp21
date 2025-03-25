@@ -34,6 +34,10 @@ public class FileManager implements Serializable {
         return removal;
     }
 
+    public boolean isStaging(String fileName) {
+        return (addition.containsKey(fileName) && addition.get(fileName).equals(Utils.fileHash(fileName)));
+    }
+
     /* 将文件 fileName 暂存至 addition（创建或覆盖），同时在 STAGING_BLOBS 创建相应文件（创建或覆盖） */
     public void addToAddition(String fileName) {
         // addition 加入（或覆盖） fileName 和 fileName 的哈希码 fileHash
@@ -44,10 +48,7 @@ public class FileManager implements Serializable {
     }
     /* 将文件 fileName 从 addition 中移除（无论在不在），同时删除 STAGING_BLOBS 的相应文件（无论在不在） */
     public void removeFromAddition(String fileName) {
-        String content = Utils.readContentsAsString(Utils.join(Repository.CWD, fileName));
-        String fileHash = Utils.sha1(fileName, content);
         addition.remove(fileName);
-        Utils.deleteFileFrom(Repository.STAGING_BLOBS, fileHash);
     }
 
     /* 将文件 fileName 暂存至 removal（创建或覆盖） */

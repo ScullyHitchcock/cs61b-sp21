@@ -182,9 +182,6 @@ public class RepositoryTest {
         assertTrue(staged2.exists(), FILE_NAME2 + "'s blob should be staged for addition");
 
         Repository.remove(FILE_NAME2);
-        // STAGING_BLOB 应该没有 FILE_NAME2
-        assertFalse(staged2.exists(), FILE_NAME2 + "'s blob should be unstaged for addition");
-
         // REMOVAL 应该没有 FILE_NAME2
         fileManager = Utils.readObject(Repository.FILE_MANAGER, FileManager.class);
         assertFalse(fileManager.getRemoval().contains(FILE_NAME2), "FILE_NAME2 should not be marked for removal after being unstaged");
@@ -193,15 +190,10 @@ public class RepositoryTest {
         assertTrue(Utils.join(Repository.CWD, FILE_NAME2).exists(), "Working directory should still contain " + FILE_NAME2);
 
         // commit3: 输出应为 No changes added to the commit.
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-        PrintStream originalOut = System.out;
-        System.setOut(new PrintStream(outContent));
-
-        Repository.commit("commit3");
-
-        System.setOut(originalOut);
-        String output = outContent.toString().trim();
-        assertEquals("No changes added to the commit.", output);
+        GitletException commit3Exception = assertThrows(GitletException.class, () -> {
+            Repository.commit("commit3");
+        });
+        assertEquals("No changes added to the commit.", commit3Exception.getMessage());
 
         // remove 不存在的文件，抛异常
         GitletException exception = assertThrows(GitletException.class, () -> Repository.remove("not_file"));
@@ -325,5 +317,137 @@ public class RepositoryTest {
         // 提交一次“commitD”
         // log输出，应该得到大概 D -> B -> A -> initial commit 四个提交的输出
         // global-log输出，应该得到总共5无序的提交输出
+
+        Repository.setup();
+        File file = Utils.join(Repository.CWD, FILE_NAME1);
+        Utils.createFile(file);
+
+        // commitA
+        Utils.writeContents(file, "A");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitA");
+
+        // commitB
+        Utils.writeContents(file, "B");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitB");
+
+        // 创建分支并提交 commitC
+        Repository.branch("new-branch");
+        Repository.checkout(new String[]{"new-branch"});
+        Utils.writeContents(file, "C");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitC");
+
+        // 切换回 main 分支并提交 commitD
+        Repository.checkout(new String[]{"main"});
+        Utils.writeContents(file, "D");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitD");
+
+        // 检查 log 输出（当前在 main 分支，应为 D -> B -> A -> initial commit）
+        ByteArrayOutputStream logOut = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(logOut));
+        Repository.log();
+        System.setOut(originalOut);
+
+        String logOutput = logOut.toString();
+        assertTrue(logOutput.contains("commitD"), "log should include commitD");
+        assertTrue(logOutput.contains("commitB"), "log should include commitB");
+        assertTrue(logOutput.contains("commitA"), "log should include commitA");
+        assertTrue(logOutput.contains("initial commit"), "log should include initial commit");
+        assertFalse(logOutput.contains("commitC"), "log should NOT include commitC on main branch");
+
+        // 检查 global-log 输出应包含所有5个提交
+        ByteArrayOutputStream globalLogOut = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(globalLogOut));
+        Repository.globalLog();
+        System.setOut(originalOut);
+
+        String globalOutput = globalLogOut.toString();
+        assertTrue(globalOutput.contains("commitA"), "global-log should include commitA");
+        assertTrue(globalOutput.contains("commitB"), "global-log should include commitB");
+        assertTrue(globalOutput.contains("commitC"), "global-log should include commitC");
+        assertTrue(globalOutput.contains("commitD"), "global-log should include commitD");
+        assertTrue(globalOutput.contains("initial commit"), "global-log should include initial commit");
     }
+
+    @Test
+    public void testCheckout() {
+
+        Repository.setup();
+        File file = Utils.join(Repository.CWD, FILE_NAME1);
+        Utils.createFile(file);
+
+        // 初始提交
+        Utils.writeContents(file, "A");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitA");
+
+        // 修改并提交 commitB
+        Utils.writeContents(file, "B");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitB");
+
+        // 创建新分支并切换
+        Repository.branch("dev");
+        Repository.checkout(new String[]{"dev"});
+
+        // dev 分支上提交 commitC
+        Utils.writeContents(file, "C");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitC");
+
+        // 检查切换回 main，文件应为 B 内容
+        Repository.checkout(new String[]{"main"});
+        String content = Utils.readContentsAsString(file);
+        assertEquals("B", content, "After checking out to main, file content should be 'B'");
+
+        // 再切换回 dev，文件应为 C 内容
+        Repository.checkout(new String[]{"dev"});
+        content = Utils.readContentsAsString(file);
+        assertEquals("C", content, "After checking out to dev, file content should be 'C'");
+
+        // 尝试切换到当前分支，抛出异常
+        GitletException sameBranchEx = assertThrows(GitletException.class, () -> {
+            Repository.checkout(new String[]{"dev"});
+        });
+        assertEquals("No need to checkout the current branch.", sameBranchEx.getMessage());
+
+        // 切换不存在的分支，抛异常
+        GitletException noBranchEx = assertThrows(GitletException.class, () -> {
+            Repository.checkout(new String[]{"nonexistent"});
+        });
+        assertEquals("No such branch exists.", noBranchEx.getMessage());
+
+        // 用 HEAD commit 恢复文件内容
+        Utils.writeContents(file, "overwrite dev content");
+        Repository.checkout(new String[]{"--", FILE_NAME1});
+        assertEquals("C", Utils.readContentsAsString(file), "Checkout -- [file] should restore file from HEAD");
+
+        // checkout 到某个 commit 的文件
+        CommitManager manager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
+        Commit commitB = manager.findByMessage("commitB").get(0);
+        Repository.checkout(new String[]{commitB.getId(), "--", FILE_NAME1});
+        assertEquals("B", Utils.readContentsAsString(file), "File should be restored to version from commitB");
+
+        // checkout 不存在的 commit id
+        GitletException noCommitEx = assertThrows(GitletException.class, () -> {
+            Repository.checkout(new String[]{"abc123", "--", FILE_NAME1});
+        });
+        assertEquals("No commit with that id exists.", noCommitEx.getMessage());
+
+        // checkout 存在的 commit，但文件不在其中
+        Utils.createFile(Utils.join(Repository.CWD, FILE_NAME2));
+        Utils.writeContents(Utils.join(Repository.CWD, FILE_NAME2), TEXT2);
+        Repository.addFile(FILE_NAME2);
+        Repository.commit("commit with file2");
+
+        GitletException missingFileEx = assertThrows(GitletException.class, () -> {
+            Repository.checkout(new String[]{commitB.getId(), "--", FILE_NAME2});
+        });
+        assertEquals("File does not exist in that commit.", missingFileEx.getMessage());
+    }
+
 }
