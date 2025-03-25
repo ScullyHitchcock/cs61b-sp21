@@ -33,30 +33,6 @@ public class FileManager implements Serializable {
         return removal;
     }
 
-    public boolean isStagingForAdd(String fileName) {
-        return (addition.containsKey(fileName));
-    }
-
-    public boolean isStagingForRm(String fileName) {
-        return removal.contains(fileName);
-    }
-
-    public boolean isDeleted(Commit commit, String fileName) {
-        if (Utils.hasFile(Repository.CWD, fileName)) return false;
-        else {
-            return (isStagingForAdd(fileName)) || (commit.isTracking(fileName) && !isStagingForRm(fileName));
-        }
-    }
-
-    public boolean isModified(Commit commit, String fileName) {
-        if (commit.isTrackingDifferent(fileName)) return true;
-        return isStagingForAdd(fileName) && !addition.get(fileName).equals(Utils.fileHash(fileName));
-    }
-
-    public  boolean isUntracked(Commit commit, String fileName) {
-        return !commit.isTracking(fileName) && !isStagingForAdd(fileName);
-    }
-
     /* 将文件 fileName 暂存至 addition（创建或覆盖），同时在 STAGING_BLOBS 创建相应文件（创建或覆盖） */
     public void addToAddition(String fileName) {
         String content = Utils.readContentsAsString(Utils.join(Repository.CWD, fileName));
@@ -64,6 +40,7 @@ public class FileManager implements Serializable {
         addition.put(fileName, fileHash);
         Utils.createOrOverride(Repository.STAGING_BLOBS, fileHash, content);
     }
+
     /* 将文件 fileName 从 addition 中移除（无论在不在）*/
     public void removeFromAddition(String fileName) {
         addition.remove(fileName);
@@ -76,6 +53,42 @@ public class FileManager implements Serializable {
     /* 将文件 fileName 从 removal 中移除（无论在不在） */
     public void removeFromRemoval(String fileName) {
         removal.remove(fileName);
+    }
+
+    /* 如果文件 fileName 在 addition 中，返回 true */
+    public boolean isStagingInAdd(String fileName) {
+        return (addition.containsKey(fileName));
+    }
+
+    /* 如果文件 fileName 在 removal 中，返回 true */
+    public boolean isStagingInRm(String fileName) {
+        return removal.contains(fileName);
+    }
+
+    /* 如果文件 fileName 在 CWD 中，返回 false
+     *  否则如果
+     *   1 fileName 被 commit 追踪，且不在 removal 中，返回 true
+     *   2 fileName 在 addition 中，返回 true */
+    public boolean hasDeleted(Commit commit, String fileName) {
+        if (Utils.hasFile(Repository.CWD, fileName)) return false;
+        else {
+            return (isStagingInAdd(fileName))
+                || (commit.isTracking(fileName) && !isStagingInRm(fileName));
+        }
+    }
+
+    /*  1 如果文件 fileName 不在 addition 中，且被 commit 追踪，且内容与追踪内容不同，返回 true
+     *  2 如果文件 fileName 在 addition 中，且内容与 addition 内容不同，返回 true */
+    public boolean hasModified(Commit commit, String fileName) {
+        return (!isStagingInAdd(fileName) && commit.isTrackingDifferent(fileName))
+            || (isStagingInAdd(fileName) && !addition.get(fileName).equals(Utils.fileHash(fileName)));
+    }
+
+    /* 1 如果 fileName 不被 commit 追踪，且不在 addition 中，返回 true
+    *  2 如果 fileName 在 removal 中，且在 CWD 中，返回true */
+    public boolean isNotTracking(Commit commit, String fileName) {
+        return (!commit.isTracking(fileName) && !isStagingInAdd(fileName))
+            || ((isStagingInRm(fileName) && Utils.hasFile(Repository.CWD, fileName)));
     }
 
     /* 清空 staging 区域 */

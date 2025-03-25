@@ -97,7 +97,7 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-        if (fileManager.isUntracked(headCommit, fileName)) {
+        if (fileManager.isNotTracking(headCommit, fileName)) {
             throw Utils.error("No reason to remove the file.");
         }
         if (headCommit.isTracking(fileName)) {
