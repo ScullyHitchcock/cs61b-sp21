@@ -181,6 +181,7 @@ public class Repository {
 
     }
 
+    /* 打印全部 commit message 为 msg 的 commit 的 id 字符串 */
     public static void find(String msg) {
         CommitManager manager = callCommitManager();
         List<Commit> commitsWithMsg = manager.findByMessage(msg);
@@ -268,6 +269,7 @@ public class Repository {
         fileManager.save();
     }
 
+    /* 新建名为 branch 的分支 */
     public static void branch(String branch) {
         CommitManager manager = callCommitManager();
         boolean created =  manager.createNewBranch(branch);
@@ -278,6 +280,7 @@ public class Repository {
         }
     }
 
+    /* 删除名为 branch 的分支 */
     public static void rmBranch(String branch) {
         CommitManager commitManager = callCommitManager();
         if (branch.equals(commitManager.headBranch())) {
@@ -290,7 +293,12 @@ public class Repository {
         commitManager.save();
     }
 
+    /* 打印当前 gitlet 目前正在管理的所有文件的状态 */
     public static void status() {
-
+        // 1 选择 headCommit 追踪的文件集合与 CWD 所有文件集合，组合成并集
+        // 2 遍历并集，对每个 fileName 进行判断：
+        //      1 if is staged or removed
+        //      2 if is modified or deleted
+        //      3 if is untracked
     }
 }

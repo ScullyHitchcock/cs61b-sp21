@@ -44,7 +44,7 @@ public class FileManager implements Serializable {
     public boolean isDeleted(Commit commit, String fileName) {
         if (Utils.hasFile(Repository.CWD, fileName)) return false;
         else {
-            return (isStagingForAdd(fileName)) && (commit.isTracking(fileName) && !isStagingForRm(fileName));
+            return (isStagingForAdd(fileName)) || (commit.isTracking(fileName) && !isStagingForRm(fileName));
         }
     }
 
@@ -53,7 +53,7 @@ public class FileManager implements Serializable {
         return isStagingForAdd(fileName) && !addition.get(fileName).equals(Utils.fileHash(fileName));
     }
 
-    public boolean isUntracked(Commit commit, String fileName) {
+    public  boolean isUntracked(Commit commit, String fileName) {
         return !commit.isTracking(fileName) && !isStagingForAdd(fileName);
     }
 
