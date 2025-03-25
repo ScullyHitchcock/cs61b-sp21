@@ -62,7 +62,7 @@ public class Commit implements Serializable, Dumpable {
         parentCommits.add(parentHash);
     }
 
-    public String getId() {
+    public String id() {
         return id;
     }
 

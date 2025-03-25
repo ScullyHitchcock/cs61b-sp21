@@ -429,7 +429,7 @@ public class RepositoryTest {
         // checkout 到某个 commit 的文件
         CommitManager manager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
         Commit commitB = manager.findByMessage("commitB").get(0);
-        Repository.checkout(new String[]{commitB.getId(), "--", FILE_NAME1});
+        Repository.checkout(new String[]{commitB.id(), "--", FILE_NAME1});
         assertEquals("B", Utils.readContentsAsString(file), "File should be restored to version from commitB");
 
         // checkout 不存在的 commit id
@@ -445,7 +445,7 @@ public class RepositoryTest {
         Repository.commit("commit with file2");
 
         GitletException missingFileEx = assertThrows(GitletException.class, () -> {
-            Repository.checkout(new String[]{commitB.getId(), "--", FILE_NAME2});
+            Repository.checkout(new String[]{commitB.id(), "--", FILE_NAME2});
         });
         assertEquals("File does not exist in that commit.", missingFileEx.getMessage());
     }

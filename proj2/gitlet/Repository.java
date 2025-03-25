@@ -243,7 +243,7 @@ public class Repository {
             // Print current commit details
             printLog(cur);
             // Determine the parent commit
-            String parentId = manager.ParentHash(cur.getId());
+            String parentId = manager.ParentHash(cur.id());
             if (parentId == null || !manager.containsCommit(parentId)) {
                 break;
             }
@@ -254,8 +254,8 @@ public class Repository {
     /* 无序打印所有分支的所有 commit */
     public static void globalLog() {
         CommitManager manager = callCommitManager();
-        HashSet<String> allCommits = manager.getAllCommits();
-        for (String commitHash: allCommits) {
+        Map<String, String> allCommits = manager.getAllCommits();
+        for (String commitHash: allCommits.keySet()) {
             printLog(manager.getCommit(commitHash));
         }
     }
@@ -267,7 +267,7 @@ public class Repository {
                 .withZone(ZoneId.systemDefault());
         String formattedTime = formatter.format(time);
         String commitMsg = commit.getMessage();
-        String commitId = commit.getId();
+        String commitId = commit.id();
 
         Utils.message("===");
         Utils.message("commit %s", commitId);
@@ -278,19 +278,13 @@ public class Repository {
     }
 
     public static void find(String msg) {
-        boolean found = false;
         CommitManager manager = callCommitManager();
-        HashSet<String> allCommits = manager.getAllCommits();
-        for (String commitHash: allCommits) {
-            Commit commit = manager.getCommit(commitHash);
-            String commitMsg = commit.getMessage();
-            if (msg.equals(commitMsg)) {
-                found = true;
-                System.out.println(commit.getId());
-            }
-        }
-        if (!found) {
+        List<Commit> commitsWithMsg = manager.findByMessage(msg);
+        if (commitsWithMsg.isEmpty()) {
             throw Utils.error("Found no commit with that message.");
+        }
+        for (Commit commit: commitsWithMsg) {
+            System.out.println(commit.id());
         }
     }
 

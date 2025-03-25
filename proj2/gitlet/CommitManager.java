@@ -2,15 +2,14 @@ package gitlet;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 /**
  * Commit 管理器
  */
 public class CommitManager implements Serializable {
     // 使用哈希集合，只存放 Commit 对象的哈希值
-    private HashSet<String> commits;
+    private HashMap<String, String> commits;
 
     /* HEAD 指针，指向当前活跃的分支名 */
     private String headBranchName;
@@ -25,7 +24,7 @@ public class CommitManager implements Serializable {
      * 4，将 initCommit 加入 commits 中，main 指向它
      */
     public CommitManager() {
-        commits = new HashSet<>();
+        commits = new HashMap<>();
         branchs = new HashMap<>();
         headBranchName = "main";
         Commit initCommit = Commit.createInitCommit();
@@ -58,6 +57,7 @@ public class CommitManager implements Serializable {
 
     public Commit getBranchCommit(String branch) {
         String branchCommitHash = branchs.get(branch);
+        if (branchCommitHash == null) return null;
         return getCommit(branchCommitHash);
     }
 
@@ -69,13 +69,13 @@ public class CommitManager implements Serializable {
     }
 
     /* 以列表形式返回所有 commit 哈希码 */
-    public HashSet<String> getAllCommits() {
+    public HashMap<String, String> getAllCommits() {
         return commits;
     }
 
     /* 判断 manager 是否储存了指定 commit 哈希码 */
     public boolean containsCommit(String hashcode) {
-        return commits.contains(hashcode);
+        return commits.containsKey(hashcode);
     }
 
     /* 判断 manager 是否有指定分支名 */
@@ -85,20 +85,21 @@ public class CommitManager implements Serializable {
 
     /* 根据当前 commit 哈希值查找其第一父 commit 哈希值*/
     public String ParentHash(String hashcode) {
-        if (!commits.contains(hashcode)) return null;
+        if (!commits.containsKey(hashcode)) return null;
         Commit commit = getCommit(hashcode);
         return commit.getParentHash();
     }
 
     /* 添加一个 Commit 对象到 manager 中 */
     public void addCommit(Commit commit) {
-        String hash = commit.save();
-        addCommit(hash);
+        String id = commit.save();
+        String commitMessage = commit.getMessage();
+        addCommit(id, commitMessage);
     }
     /* 添加一个 Commit 哈希名称到 manager 中 */
-    public void addCommit(String commitHash) {
-        commits.add(commitHash);
-        branchs.put(headBranchName, commitHash);
+    public void addCommit(String id, String msg) {
+        commits.put(id, msg);
+        branchs.put(headBranchName, id);
     }
 
     /* 创建新分支引用，成功创建返回 true，否则 false */
@@ -137,5 +138,17 @@ public class CommitManager implements Serializable {
 
             addCommit(newCommit);
         }
+    }
+
+    public List<Commit> findByMessage(String msg) {
+        ArrayList<Commit> res = new ArrayList<>();
+        for (Map.Entry<String, String> entry: commits.entrySet()) {
+            String id = entry.getKey();
+            String commitMessage = entry.getValue();
+            if (commitMessage.equals(msg)) {
+                res.add(getCommit(id));
+            }
+        }
+        return res;
     }
 }
