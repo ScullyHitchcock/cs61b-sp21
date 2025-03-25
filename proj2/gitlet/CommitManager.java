@@ -87,7 +87,9 @@ public class CommitManager implements Serializable {
     public String ParentHash(String hashcode) {
         if (!commits.containsKey(hashcode)) return null;
         Commit commit = getCommit(hashcode);
-        return commit.getParentHash();
+        List<String> parents = commit.getParentHash();
+        if (parents.isEmpty()) return null;
+        return commit.getParentHash().get(0);
     }
 
     /* 添加一个 Commit 对象到 manager 中 */

@@ -46,6 +46,8 @@ public class Main {
                 Repository.find(args[1]);
                 break;
             case "status":
+                validateNumArgs(args, 1, 1);
+                Repository.status();
                 break;
             case "checkout":
                 validateNumArgs(args, 2, 4);

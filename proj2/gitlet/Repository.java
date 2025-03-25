@@ -89,40 +89,23 @@ public class Repository {
         }
         fileManager.removeFromRemoval(fileName);
         fileManager.save();
+    }
 
-//        // 1 读取 file 获取 hashcode
-//        File file = join(CWD, fileName);
-//        if (!file.exists()) {
-//            throw Utils.error("File does not exist.");
-//        }
-//        String content = Utils.readContentsAsString(file);
-//        String fileHash = Utils.sha1(fileName, content);
-//
-//        // 2 打开 headCommit，读取正在追踪的文件以及其 blob 是否与当前文件相同，如果相同则返回
-//        CommitManager manager = callCommitManager();
-//        Commit head = manager.getHeadCommit();
-//        TreeMap<String, String> tracked = head.getTrackedFile();
-//        if (tracked.containsKey(fileName) && tracked.get(fileName).equals(fileHash)) return;
-//
-//        // 3 打开 REMOVAL 区检查此文件是否之前在这里，如果在则删除
-//        List<String> removals = Utils.plainFilenamesIn(REMOVAL);
-//        if (removals != null && removals.contains(fileName)) {
-//            join(REMOVAL, fileName).delete();
-//        }
-//
-//        // 3 判断 STAGING_BLOBS 是否存在 fileHash 文件，无则创建写入 content
-//        File blob = join(STAGING_BLOBS, fileHash);
-//        if (!blob.exists()) {
-//            Utils.createFile(blob);
-//            Utils.writeContents(blob, content);
-//        }
-//
-//        // 4 判断 ADDITION 是否已经存在 fileName 文件，无则创建写入 fileHash
-//        File stagingFile = join(ADDITION, fileName);
-//        if (!stagingFile.exists()) {
-//            Utils.createFile(stagingFile);
-//        }
-//        Utils.writeContents(stagingFile, fileHash);
+    public static void remove(String fileName) {
+        // 如果被 HEAD 追踪：就将 fileName 标记为待删除，并删除工作目录中的该文件。
+        // 无论如何确保 fileName 在 fileManager.addition 区中不存在。
+
+        Commit headCommit = callCommitManager().getHeadCommit();
+        FileManager fileManager = callFileManager();
+        if (fileManager.isUntracked(headCommit, fileName)) {
+            throw Utils.error("No reason to remove the file.");
+        }
+        if (headCommit.isTracking(fileName)) {
+            fileManager.addToRemoval(fileName);
+            Utils.deleteFileFrom(CWD, fileName);
+        }
+        fileManager.removeFromAddition(fileName);
+        fileManager.save();
     }
 
     public static void commit(String commitMessage) {
@@ -153,85 +136,6 @@ public class Repository {
 
         fileManager.clearStageArea();
         fileManager.save();
-//        // 1，读取 ADDITION 、REMOVAL 区中的所有文件名
-//        List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
-//        List<String> removals = Utils.plainFilenamesIn(REMOVAL);
-//        if ((stagingFiles.isEmpty()) && (removals.isEmpty())) {
-//            System.out.println("No changes added to the commit.");
-//            return;
-//        }
-//        // 2，如果 staging 不为空，则读取 head commit
-//        CommitManager manager = callCommitManager();
-//        Commit head = manager.getHeadCommit();
-//        // 3，以 head 为 parent 创建子 commit
-//        Commit newCommit = head.childCommit(
-//                commitMessage, // commit message
-//                Instant.now() // time
-//                );
-//
-//        if (stagingFiles != null) {
-//            for (String file: stagingFiles) {
-//                // 4，newCommit 追踪 ADDITION 区中的文件
-//                File filePath = join(ADDITION, file);
-//                String fileHash = Utils.readContentsAsString(filePath);
-//                newCommit.trackFile(file, fileHash);
-//
-//                // 5，BLOB 区复制 STAGING_BLOBS 中 file 文件所指向的 blob 文件
-//                Utils.copyFile(fileHash, STAGING_BLOBS, BLOBS);
-//            }
-//        }
-//        if (removals != null) {
-//            // 6，如果 REMOVAL 区中有标记删除的文件，则在 newCommit 中取消跟踪
-//            for (String file: removals) {
-//                if (newCommit.isTracking(file)) {
-//                    newCommit.untrackFile(file);
-//                }
-//            }
-//        }
-//        // 6，删除 ADDITION、REMOVAL 和 STAGING_BLOB 中的暂存文件
-//        Utils.clean(ADDITION);
-//        Utils.clean(STAGING_BLOBS);
-//        Utils.clean(REMOVAL);
-//        // 保存 newCommit，重新设置为 head
-//        manager.addCommit(newCommit);
-//        manager.save();
-    }
-
-    public static void remove(String fileName) {
-        // 如果被 HEAD 追踪：就将 fileName 标记为待删除，并删除工作目录中的该文件。
-        // 无论如何确保 fileName 在 fileManager.addition 区中不存在。
-
-        Commit headCommit = callCommitManager().getHeadCommit();
-        FileManager fileManager = callFileManager();
-        if (!headCommit.isTracking(fileName) && !fileManager.isStaging(fileName)) {
-            throw Utils.error("No reason to remove the file.");
-        }
-        if (headCommit.isTracking(fileName)) {
-            fileManager.addToRemoval(fileName);
-            Utils.deleteFileFrom(CWD, fileName);
-        }
-        fileManager.removeFromAddition(fileName);
-        fileManager.save();
-//        CommitManager manager = callCommitManager();
-//        Commit head = manager.getHeadCommit();
-//        TreeMap<String, String> trackingFiles = head.getTrackedFile();
-//        List<String> stagingFiles = Utils.plainFilenamesIn(ADDITION);
-//
-//        boolean inTrackingFiles = trackingFiles.containsKey(fileName);
-//        boolean inStagingFiles = (stagingFiles != null && stagingFiles.contains(fileName));
-//
-//        if (!inStagingFiles && !inTrackingFiles) {
-//            throw Utils.error("No reason to remove the file.");
-//        }
-//
-//        if (inTrackingFiles) {
-//            Utils.createFile(join(REMOVAL, fileName));
-//            Utils.restrictedDelete(join(CWD, fileName));
-//        }
-//
-//        if (inStagingFiles) {
-//            join(ADDITION, fileName).delete();
-//        }
     }
 
     /* 按顺序打印从 HEAD 所在的分支的 commit 回溯到 init commit 的提交信息（不打印其他分支） */
@@ -384,5 +288,9 @@ public class Repository {
         }
         commitManager.removeBranch(branch);
         commitManager.save();
+    }
+
+    public static void status() {
+
     }
 }

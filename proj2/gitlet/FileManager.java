@@ -1,6 +1,5 @@
 package gitlet;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 
@@ -34,19 +33,38 @@ public class FileManager implements Serializable {
         return removal;
     }
 
-    public boolean isStaging(String fileName) {
-        return (addition.containsKey(fileName) && addition.get(fileName).equals(Utils.fileHash(fileName)));
+    public boolean isStagingForAdd(String fileName) {
+        return (addition.containsKey(fileName));
+    }
+
+    public boolean isStagingForRm(String fileName) {
+        return removal.contains(fileName);
+    }
+
+    public boolean isDeleted(Commit commit, String fileName) {
+        if (Utils.hasFile(Repository.CWD, fileName)) return false;
+        else {
+            return (isStagingForAdd(fileName)) && (commit.isTracking(fileName) && !isStagingForRm(fileName));
+        }
+    }
+
+    public boolean isModified(Commit commit, String fileName) {
+        if (commit.isTrackingDifferent(fileName)) return true;
+        return isStagingForAdd(fileName) && !addition.get(fileName).equals(Utils.fileHash(fileName));
+    }
+
+    public boolean isUntracked(Commit commit, String fileName) {
+        return !commit.isTracking(fileName) && !isStagingForAdd(fileName);
     }
 
     /* 将文件 fileName 暂存至 addition（创建或覆盖），同时在 STAGING_BLOBS 创建相应文件（创建或覆盖） */
     public void addToAddition(String fileName) {
-        // addition 加入（或覆盖） fileName 和 fileName 的哈希码 fileHash
         String content = Utils.readContentsAsString(Utils.join(Repository.CWD, fileName));
         String fileHash = Utils.sha1(fileName, content);
         addition.put(fileName, fileHash);
         Utils.createOrOverride(Repository.STAGING_BLOBS, fileHash, content);
     }
-    /* 将文件 fileName 从 addition 中移除（无论在不在），同时删除 STAGING_BLOBS 的相应文件（无论在不在） */
+    /* 将文件 fileName 从 addition 中移除（无论在不在）*/
     public void removeFromAddition(String fileName) {
         addition.remove(fileName);
     }
