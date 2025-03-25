@@ -13,6 +13,8 @@ public class RepositoryTest {
     private final File TEST_DIR = new File("/Users/scullyhitchcock/Desktop/test_gitlet");
     private final String FILE_NAME1 = "test1.txt", FILE_NAME2 = "test2.txt";
     private final String TEXT1 = "Content for test1", TEXT2 = "Content for test2";
+    private final String HASH1 = Utils.sha1(FILE_NAME1, TEXT1);
+    private final String HASH2 = Utils.sha1(FILE_NAME2, TEXT2);
 
     @BeforeEach
     public void setUp() {
@@ -46,14 +48,12 @@ public class RepositoryTest {
     public void testInitCreatesGitletDirectory() {
         Repository.setup();
 
-        assertTrue(Repository.CWD.exists(), ".gitlet directory should be created");
-        assertTrue(Repository.STAGING.exists(), "staging directory should be created");
-        assertTrue(Repository.ADDITION.exists(), "staging/files should be created");
-        assertTrue(Repository.REMOVAL.exists(), "staging/removal should be created");
+        assertTrue(Repository.GITLET_DIR.exists(), ".gitlet directory should be created");
+        assertTrue(Repository.STAGING_BLOBS.exists(), "staging directory should be created");
         assertTrue(Repository.BLOBS.exists(), "blobs directory should be created");
         assertTrue(Repository.COMMITS.exists(), "commits directory should be created");
-        assertTrue(Repository.COMMIT_MANAGER.exists(), "manager file should be created");
-
+        assertTrue(Repository.COMMIT_MANAGER.exists(), "CommitManager file should be created");
+        assertTrue(Repository.FILE_MANAGER.exists(), "fileManager file should be created");
         assertNotNull(Repository.COMMITS.list(), "commits directory should not be null");
         assertTrue(Objects.requireNonNull(Repository.COMMITS.list()).length > 0, "commits directory should contain initial commit file");
         String[] commitFiles = Repository.COMMITS.list();
@@ -76,37 +76,42 @@ public class RepositoryTest {
         Utils.writeContents(file1, TEXT1);
         File file2 = Utils.join(Repository.CWD, FILE_NAME2);
         Utils.createFile(file2);
-        Utils.writeObject(file2, TEXT2);
+        Utils.writeContents(file2, TEXT2);
 
         // Step 3: add test1.txt and assert staging and blob count
         Repository.addFile(FILE_NAME1);
-        File staged1 = new File(Repository.ADDITION, FILE_NAME1);
-        assertTrue(staged1.exists(), FILE_NAME1 + " should be staged");
-        assertEquals(
-                1, Objects.requireNonNull(Repository.STAGING_BLOBS.list()).length,
-                "There should be 1 blob after first add");
+        File staged1 = new File(Repository.STAGING_BLOBS, HASH1);
+        assertTrue(staged1.exists(), FILE_NAME1 + "'s blob should be staged for addition");
 
         // Step 4: add test2.txt and assert staging and blob count
         Repository.addFile(FILE_NAME2);
-        File staged2 = new File(Repository.ADDITION, FILE_NAME2);
-        assertTrue(staged2.exists(), FILE_NAME2 + " should be staged");
-        assertEquals(
-                2, Objects.requireNonNull(Repository.STAGING_BLOBS.list()).length,
-                "There should be 2 blobs after second add");
+        File staged2 = new File(Repository.STAGING_BLOBS, HASH2);
+        assertTrue(staged2.exists(), FILE_NAME2 + "'s blob should be staged for addition");
 
         // Step 5: commit with message and assert commit count
         Repository.commit(commitMsg);
         assertEquals(
                 2, Objects.requireNonNull(Repository.COMMITS.list()).length,
                 "There should be 2 commits after second commit");
+        assertFalse(staged1.exists(), FILE_NAME1 + "'blob should be cleared");
+        assertFalse(staged2.exists(), FILE_NAME2 + "'blob should be cleared");
+        File blob1 = new File(Repository.BLOBS, HASH1);
+        File blob2 = new File(Repository.BLOBS, HASH2);
+        assertTrue(blob1.exists(), FILE_NAME1 + "'s blob should be saved Permanently");
+        assertTrue(blob2.exists(), FILE_NAME2 + "'s blob should be saved Permanently");
+        String content1 = Utils.readContentsAsString(blob1);
+        String content2 = Utils.readContentsAsString(blob2);
+        assertEquals(content1, TEXT1, "The content of " + FILE_NAME1 + "'blob should remain unchanged");
+        assertEquals(content2, TEXT2, "The content of " + FILE_NAME2 + "'blob should remain unchanged");
+
 
         // Step 6: 检查 HEAD commit 是否追踪两个文件
         CommitManager manager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
         Commit headCommit = manager.getHeadCommit();
         assertNotNull(headCommit, "Head commit should not be null");
         assertEquals(2, headCommit.getTrackedFile().size(), "Head commit should track 2 files");
-        assertTrue(headCommit.getTrackedFile().containsKey(FILE_NAME1));
-        assertTrue(headCommit.getTrackedFile().containsKey(FILE_NAME2));
+        assertEquals(HASH1, headCommit.getTrackedFile().get(FILE_NAME1), "Head commit should be tracking " + FILE_NAME1);
+        assertEquals(HASH2, headCommit.getTrackedFile().get(FILE_NAME2), "Head commit should be tracking " + FILE_NAME2);
     }
 
     @Test
@@ -121,16 +126,13 @@ public class RepositoryTest {
 
         // 1 尝试重复操作 add FILE_NAME1，检查 staging 区域，应该什么都没有
         Repository.addFile(FILE_NAME1);
-        assertEquals(0, Objects.requireNonNull(Repository.ADDITION.list()).length, "Staging area should be empty for already tracked file");
+        assertEquals(0, Objects.requireNonNull(Repository.STAGING_BLOBS.list()).length, "Staging area should be empty for already tracked file");
 
         // 2 尝试 commit，应该得到输出 "No changes added to the commit."
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-        PrintStream originalOut = System.out;
-        System.setOut(new PrintStream(outContent));
-        Repository.commit("duplicate commit");
-        System.setOut(originalOut);
-        String output = outContent.toString().trim();
-        assertEquals("No changes added to the commit.", output);
+        GitletException duplicateCommitException = assertThrows(GitletException.class, () -> {
+            Repository.commit("duplicate commit");
+        });
+        assertEquals("No changes added to the commit.", duplicateCommitException.getMessage());
 
         // 3 尝试 add 一个不存在的文件，应该得到一个GitletException异常，报错信息应该为 "File does not exist."
         GitletException exception = assertThrows(GitletException.class, () -> Repository.addFile("not_exist.txt"));
@@ -148,22 +150,21 @@ public class RepositoryTest {
         Utils.writeContents(file2, TEXT2);
 
         Repository.addFile(FILE_NAME1);
+        File staged1 = new File(Repository.STAGING_BLOBS, HASH1);
+        assertTrue(staged1.exists(), FILE_NAME1 + "'s blob should be staged for addition");
         Repository.commit("commit1");
 
         // 检查 commit1 追踪 FILE_NAME1
         CommitManager manager1 = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
         Commit commit1 = manager1.getHeadCommit();
-        assertTrue(commit1.getTrackedFile().containsKey(FILE_NAME1));
+        assertEquals(HASH1, commit1.getTrackedFile().get(FILE_NAME1), "Commit1 should be tracking " + FILE_NAME1);
 
         Repository.remove(FILE_NAME1);
-        // REMOVAL 应该有 FILE_NAME1
-        File removalFile1 = Utils.join(Repository.REMOVAL, FILE_NAME1);
-        assertTrue(removalFile1.exists(), "REMOVAL should contain " + FILE_NAME1);
-
-        // ADDITION 应该没有 FILE_NAME1
-        File additionFile1 = Utils.join(Repository.ADDITION, FILE_NAME1);
-        assertFalse(additionFile1.exists(), "ADDITION should not contain " + FILE_NAME1);
-
+        // FILE_MANAGER 的 removal 应该记录 FILE_NAME1
+        FileManager fileManager = Utils.readObject(Repository.FILE_MANAGER, FileManager.class);
+        assertTrue(fileManager.getRemoval().contains(FILE_NAME1), "FILE_NAME1 should be marked for removal in FILE_MANAGER");
+        // FILE_MANAGER 的 addition 应该不记录 FILE_NAME1
+        assertFalse(fileManager.getAddition().containsKey(FILE_NAME1), "FILE_NAME1 should not be in addition after removal");
         // CWD 应该没有 FILE_NAME1
         File cwdFile1 = Utils.join(Repository.CWD, FILE_NAME1);
         assertFalse(cwdFile1.exists(), "Working directory should not contain " + FILE_NAME1);
@@ -177,16 +178,16 @@ public class RepositoryTest {
 
 
         Repository.addFile(FILE_NAME2);
-        File additionFile2 = Utils.join(Repository.ADDITION, FILE_NAME2);
-        assertTrue(additionFile2.exists(), "ADDITION should contain " + FILE_NAME2);
+        File staged2 = new File(Repository.STAGING_BLOBS, HASH2);
+        assertTrue(staged2.exists(), FILE_NAME2 + "'s blob should be staged for addition");
 
         Repository.remove(FILE_NAME2);
-        // ADDITION 应该没有 FILE_NAME2
-        assertFalse(additionFile2.exists(), "ADDITION should not contain " + FILE_NAME2);
+        // STAGING_BLOB 应该没有 FILE_NAME2
+        assertFalse(staged2.exists(), FILE_NAME2 + "'s blob should be unstaged for addition");
 
         // REMOVAL 应该没有 FILE_NAME2
-        File removalFile2 = Utils.join(Repository.REMOVAL, FILE_NAME2);
-        assertFalse(removalFile2.exists(), "REMOVAL should not contain " + FILE_NAME2);
+        fileManager = Utils.readObject(Repository.FILE_MANAGER, FileManager.class);
+        assertFalse(fileManager.getRemoval().contains(FILE_NAME2), "FILE_NAME2 should not be marked for removal after being unstaged");
 
         // CWD 应该仍然有 FILE_NAME2
         assertTrue(Utils.join(Repository.CWD, FILE_NAME2).exists(), "Working directory should still contain " + FILE_NAME2);

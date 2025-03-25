@@ -79,7 +79,9 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-
+        if (!Utils.hasFile(CWD, fileName)) {
+            throw Utils.error("File does not exist.");
+        }
         if (headCommit.isTrackingSame(fileName)) {
             fileManager.removeFromAddition(fileName);
         } else {
@@ -292,6 +294,7 @@ public class Repository {
 
     public static void checkout(String[] checkoutArgs) {
         CommitManager commitManager = callCommitManager();
+        Commit head = commitManager.getHeadCommit();
         FileManager fileManager = callFileManager();
         if (checkoutArgs.length == 1) {
             // checkout [branch name]
@@ -301,7 +304,6 @@ public class Repository {
             // Any files that are tracked in the current branch but are not present in the checked-out branch are deleted.
             // The staging area is cleared, unless the checked-out branch is the current branch (see Failure cases below).
             String branch = checkoutArgs[0];
-            Commit headCommit = commitManager.getHeadCommit();
             Commit branchCommit = commitManager.getBranchCommit(branch);
 
             // 如果你输入的分支名在分支列表中找不到，直接报错，不要进行任何操作。
@@ -318,7 +320,7 @@ public class Repository {
             //→ 这种情况下要报错退出，不能执行 checkout。防止覆盖用户未保存的修改。
             List<String> files = Utils.plainFilenamesIn(CWD);
             for (String fileName: files) {
-                if (!headCommit.isTracking(fileName) && branchCommit.isTrackingDifferent(fileName)) {
+                if (!head.isTracking(fileName) && branchCommit.isTrackingDifferent(fileName)) {
                     throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
                 }
             }
@@ -327,9 +329,9 @@ public class Repository {
             // 如果有些文件被当前分支追踪、但在目标分支的最新 commit 中没有这些文件，那么这些文件会从工作目录中删除。
             // 切换分支时 staging 区会被清空（除非你 checkout 的正好是当前分支）。
             Map<String, String> branchTrackingFiles = branchCommit.getTrackedFile();
-            Map<String, String> headTrackingFiles = headCommit.getTrackedFile();
+            Map<String, String> headTrackingFiles = head.getTrackedFile();
             for (String fileName: headTrackingFiles.keySet()) {
-                if (headCommit.isTracking(fileName) && !branchCommit.isTracking(fileName)) {
+                if (head.isTracking(fileName) && !branchCommit.isTracking(fileName)) {
                     Utils.deleteFileFrom(CWD, fileName);
                 }
             }
@@ -348,7 +350,7 @@ public class Repository {
                 // overwriting the version of the file that’s already there if there is one.
                 // The new version of the file is not staged.
                 fileName = checkoutArgs[1];
-                commit = commitManager.getHeadCommit();
+                commit = head;
             } else {
                 // checkout [commit id] -- [file name]
                 // Takes the version of the file as it exists in the commit with the given id,

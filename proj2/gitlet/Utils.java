@@ -306,6 +306,10 @@ class Utils {
         System.out.println();
     }
 
+    static boolean hasFile(File dir, String fileName) {
+        return join(dir, fileName).exists();
+    }
+
     static void createFile(File file) {
         try {
             file.createNewFile();
