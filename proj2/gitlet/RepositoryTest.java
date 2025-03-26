@@ -3,7 +3,6 @@ package gitlet;
 import org.junit.jupiter.api.*;
 import java.io.*;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +36,7 @@ public class RepositoryTest {
 
         // 设置为临时目录
         System.setProperty("user.dir", candidate.toPath().toAbsolutePath().toString());
+        Repository.refreshCWDForUnitTest();
     }
 
     @AfterEach
