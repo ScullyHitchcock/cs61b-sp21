@@ -94,7 +94,7 @@ public class Commit implements Serializable, Dumpable {
     /* 如果 commit 正在追踪的文件 fileName 没有变化，返回 true */
     public boolean isTrackingSame(String fileName) {
         String fileHash = Utils.fileHash(fileName);
-        if (isTracking(fileName)) {
+        if (isTracking(fileName) && fileHash != null) {
             return (fileHash.equals(trackedFile.get(fileName)));
         }
         return false;

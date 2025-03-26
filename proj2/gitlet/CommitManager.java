@@ -39,6 +39,13 @@ public class CommitManager implements Serializable {
         Utils.writeObject(Repository.COMMIT_MANAGER, this);
     }
 
+    /** 获取分支名列表 */
+    public List<String> getBranches() {
+        List<String> branches = new ArrayList<>(branchs.keySet());
+        Collections.sort(branches);
+        return branches;
+    }
+
     /* 返回当前活跃的分支名 */
     public String headBranch() {
         return headBranchName;

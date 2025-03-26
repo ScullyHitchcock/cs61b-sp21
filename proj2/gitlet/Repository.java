@@ -1,5 +1,7 @@
 package gitlet;
 
+import org.checkerframework.checker.units.qual.A;
+
 import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -14,7 +16,7 @@ import static gitlet.Utils.*;
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
  *
- *  @author TODO
+ *  @author CST
  */
 public class Repository {
     /**
@@ -60,11 +62,13 @@ public class Repository {
         fileManager.save();
     }
 
-    private static CommitManager callCommitManager() {
+    public static CommitManager callCommitManager() {
         return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
     }
-    private static FileManager callFileManager() {
-        return Utils.readObject(FILE_MANAGER, FileManager.class);
+    public static FileManager callFileManager() {
+        FileManager manager = Utils.readObject(FILE_MANAGER, FileManager.class);
+        manager.updateFiles();
+        return manager;
     }
 
     /** 1 如果没有被最新 commit 追踪则加入暂存区（创建或覆盖）
@@ -295,10 +299,79 @@ public class Repository {
 
     /* 打印当前 gitlet 目前正在管理的所有文件的状态 */
     public static void status() {
-        // 1 选择 headCommit 追踪的文件集合与 CWD 所有文件集合，组合成并集
-        // 2 遍历并集，对每个 fileName 进行判断：
-        //      1 if is staged or removed
-        //      2 if is modified or deleted
-        //      3 if is untracked
+        FileManager fileManager = callFileManager();
+        CommitManager commitManager = callCommitManager();
+        Commit head = commitManager.getHeadCommit();
+        String headBranch = commitManager.headBranch();
+        List<String> branches = commitManager.getBranches();
+        List<String> stagingFiles = fileManager.getStagedFiles();
+        List<String> removedFiles = fileManager.getRemovedFiles();
+        List<String> modifiedFiles = fileManager.getModifiedFiles(head);
+        List<String> untrackedFiles = fileManager.getUntrackedFiles(head);
+
+        printStatus(headBranch, branches, stagingFiles, removedFiles, modifiedFiles, untrackedFiles);
+    }
+
+    /**
+     * 打印当前工作区状态，包括分支、暂存文件、已移除文件等。
+     *
+     * @param headBranch    当前活跃分支名称（标记为 *）
+     * @param branches      分支名称列表，包括所有分支名
+     * @param stagingFiles  暂存文件列表
+     * @param removedFiles  标记为已移除的文件列表
+     * @param modifiedFiles 修改但未暂存的文件列表
+     * @param untrackedFiles 未被追踪的文件列表
+     */
+    private static void printStatus(String headBranch,
+                                    List<String> branches,
+                                    List<String> stagingFiles,
+                                    List<String> removedFiles,
+                                    List<String> modifiedFiles,
+                                    List<String> untrackedFiles) {
+        // 打印分支信息
+        System.out.println("=== Branches ===");
+        for (String branch : branches) {
+            if (branch.equals(headBranch)) {
+                System.out.println("*" + branch); // 当前分支加上 "*" 标识
+            } else {
+                System.out.println(branch);
+            }
+        }
+        System.out.println(); // 空行
+
+        // 打印暂存文件信息
+        System.out.println("=== Staged Files ===");
+        if (!stagingFiles.isEmpty()) {
+            for (String file : stagingFiles) {
+                System.out.println(file);
+            }
+        }
+        System.out.println(); // 空行
+
+        // 打印已移除文件信息
+        System.out.println("=== Removed Files ===");
+        if (!removedFiles.isEmpty()) {
+            for (String file : removedFiles) {
+                System.out.println(file);
+            }
+        }
+        System.out.println(); // 空行
+
+        // 打印修改未暂存文件信息
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        if (!modifiedFiles.isEmpty()) {
+            for (String file : modifiedFiles) {
+                System.out.println(file);
+            }
+        }
+        System.out.println(); // 空行
+
+        // 打印未追踪文件信息
+        System.out.println("=== Untracked Files ===");
+        if (!untrackedFiles.isEmpty()) {
+            for (String file : untrackedFiles) {
+                System.out.println(file);
+            }
+        }
     }
 }

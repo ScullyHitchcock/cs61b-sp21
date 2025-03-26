@@ -3,6 +3,7 @@ package gitlet;
 import org.junit.jupiter.api.*;
 import java.io.*;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -450,4 +451,52 @@ public class RepositoryTest {
         assertEquals("File does not exist in that commit.", missingFileEx.getMessage());
     }
 
+    @Test
+    public void testFileStatus() throws IOException {
+        Repository.setup();
+
+        File file1 = Utils.join(Repository.CWD, FILE_NAME1);
+        File file2 = Utils.join(Repository.CWD, FILE_NAME2);
+        Utils.createFile(file1);
+        Utils.createFile(file2);
+        Utils.writeContents(file1, TEXT1);
+        Utils.writeContents(file2, TEXT2);
+
+        // 添加 file1 到暂存区
+        Repository.addFile(FILE_NAME1);
+
+        // 提交 file1
+        Repository.commit("Commit file1");
+
+        // 修改 file1 内容（已追踪但未暂存的修改）
+        Utils.writeContents(file1, "Modified content");
+
+        // 删除 file2（未追踪但存在）
+        file2.delete();
+
+        // 创建一个未追踪的新文件 file3
+        String fileName3 = "file3.txt";
+        File file3 = Utils.join(Repository.CWD, fileName3);
+        Utils.createFile(file3);
+        Utils.writeContents(file3, "new file");
+
+        // 捕获 status 输出
+        ByteArrayOutputStream statusOut = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(statusOut));
+
+        Repository.status();
+
+        System.setOut(originalOut);
+        String output = statusOut.toString();
+
+        assertTrue(output.contains("=== Modifications Not Staged For Commit ==="), "Should list modified files");
+        assertTrue(output.contains(FILE_NAME1), "Modified file1 should appear under modified list");
+
+        assertTrue(output.contains("=== Untracked Files ==="), "Should list untracked files");
+        assertTrue(output.contains(fileName3), "Untracked file3 should appear");
+
+        assertTrue(output.contains("=== Staged Files ==="), "Should list staged files (empty in this case)");
+        assertTrue(output.contains("=== Removed Files ==="), "Should list removed files (empty in this case)");
+    }
 }
