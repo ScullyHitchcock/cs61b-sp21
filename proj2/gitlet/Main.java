@@ -66,8 +66,12 @@ public class Main {
                 Repository.rmBranch(args[1]);
                 break;
             case "reset":
+                validateNumArgs(args, 2, 2);
+                Repository.reset(args[1]);
                 break;
             case "merge":
+                validateNumArgs(args, 2, 2);
+                Repository.merge(args[1]);
                 break;
             default:
                 throw Utils.error("Unknown command: %s", args[0]);

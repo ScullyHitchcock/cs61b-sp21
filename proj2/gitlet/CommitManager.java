@@ -62,6 +62,12 @@ public class CommitManager implements Serializable {
         return getCommit(headHash);
     }
 
+    public void resetHeadCommit(String id) {
+        if (commits.containsKey(id)) {
+            branchs.put(headBranchName, id);
+        }
+    }
+
     public Commit getBranchCommit(String branch) {
         String branchCommitHash = branchs.get(branch);
         if (branchCommitHash == null) return null;

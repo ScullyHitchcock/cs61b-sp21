@@ -1,7 +1,5 @@
 package gitlet;
 
-import org.checkerframework.checker.units.qual.A;
-
 import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -101,7 +99,7 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-        if (fileManager.isNotTracking(headCommit, fileName)) {
+        if (fileManager.isNotTracking(headCommit, fileName) || !Utils.hasFile(CWD, fileName)) {
             throw Utils.error("No reason to remove the file.");
         }
         if (headCommit.isTracking(fileName)) {
@@ -233,16 +231,17 @@ public class Repository {
             // 这个命令执行完后，当前分支（HEAD）会切换成你指定的分支。
             // 如果有些文件被当前分支追踪、但在目标分支的最新 commit 中没有这些文件，那么这些文件会从工作目录中删除。
             // 切换分支时 staging 区会被清空（除非你 checkout 的正好是当前分支）。
-            Map<String, String> branchTrackingFiles = branchCommit.getTrackedFile();
+//            Map<String, String> branchTrackingFiles = branchCommit.getTrackedFile();
             Map<String, String> headTrackingFiles = head.getTrackedFile();
             for (String fileName: headTrackingFiles.keySet()) {
                 if (head.isTracking(fileName) && !branchCommit.isTracking(fileName)) {
                     Utils.deleteFileFrom(CWD, fileName);
                 }
             }
-            for (String fileName: branchTrackingFiles.keySet()) {
-                FileManager.checkout(branchCommit, fileName);
-            }
+            FileManager.checkout(branchCommit);
+//            for (String fileName: branchTrackingFiles.keySet()) {
+//                FileManager.checkout(branchCommit, fileName);
+//            }
             commitManager.changeHeadTo(branch);
             fileManager.clearStageArea();
         }
@@ -373,5 +372,27 @@ public class Repository {
                 System.out.println(file);
             }
         }
+    }
+
+    public static void reset(String commitId) {
+        CommitManager commitManager = callCommitManager();
+        Commit commit = commitManager.getCommit(commitId);
+        if (commit == null) {
+            throw Utils.error("No commit with that id exists.");
+        }
+        FileManager fileManager = callFileManager();
+        if (!fileManager.getUntrackedFiles(commitManager.getHeadCommit()).isEmpty()) {
+            throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
+        }
+        // 将工作区中的所有文件恢复成 commit 时的状态
+        // 清空工作区
+        Utils.clean(CWD);
+        // checkout
+        FileManager.checkout(commit);
+        // 重新设置 headCommit
+        commitManager.resetHeadCommit(commitId);
+    }
+
+    public static void merge(String branch) {
     }
 }

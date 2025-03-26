@@ -50,6 +50,8 @@ public class FileManager implements Serializable {
         if (workingFiles != null) {
             filesInManagement.addAll(workingFiles);
         }
+        filesInManagement.addAll(addition.keySet());
+        filesInManagement.addAll(removal);
     }
 
     /* 将文件 fileName 暂存至 addition（创建或覆盖），同时在 STAGING_BLOBS 创建相应文件（创建或覆盖） */
@@ -102,6 +104,7 @@ public class FileManager implements Serializable {
      * 2 如果文件 fileName 在 addition 中，且内容与 addition 内容不同，返回 true */
     public boolean hasModified(Commit commit, String fileName) {
         if (!Utils.hasFile(Repository.CWD, fileName)) return false;
+        if (isNotTracking(commit, fileName)) return false;
         return (!isStagingInAdd(fileName) && commit.isTrackingDifferent(fileName))
             || (isStagingInAdd(fileName) && !addition.get(fileName).equals(Utils.fileHash(fileName)));
     }
@@ -128,6 +131,16 @@ public class FileManager implements Serializable {
         String fileHash = commit.getTrackedFile().get(fileName);
         String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOBS, fileHash));
         Utils.createOrOverride(Repository.CWD, fileName, blobContent);
+    }
+
+    /* 将工作区中所有被 commit 追踪的文件恢复成追踪的状态 */
+    static void checkout(Commit commit) {
+        Map<String, String> branchTrackingFiles = commit.getTrackedFile();
+        for (String fileName: branchTrackingFiles.keySet()) {
+            String fileHash = commit.getTrackedFile().get(fileName);
+            String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOBS, fileHash));
+            Utils.createOrOverride(Repository.CWD, fileName, blobContent);
+        }
     }
 
     /**

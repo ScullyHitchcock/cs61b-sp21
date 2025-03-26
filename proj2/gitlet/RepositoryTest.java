@@ -452,7 +452,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testFileStatus() throws IOException {
+    public void testFileStatus1() throws IOException {
         Repository.setup();
 
         File file1 = Utils.join(Repository.CWD, FILE_NAME1);
@@ -490,13 +490,132 @@ public class RepositoryTest {
         System.setOut(originalOut);
         String output = statusOut.toString();
 
-        assertTrue(output.contains("=== Modifications Not Staged For Commit ==="), "Should list modified files");
-        assertTrue(output.contains(FILE_NAME1), "Modified file1 should appear under modified list");
-
-        assertTrue(output.contains("=== Untracked Files ==="), "Should list untracked files");
-        assertTrue(output.contains(fileName3), "Untracked file3 should appear");
-
+        assertTrue(output.contains("=== Modifications Not Staged For Commit ===\n" + FILE_NAME1), "Modified file1 should appear under modified list");
+        assertTrue(output.contains("=== Untracked Files ===\n" + fileName3), "Untracked file3 should appear");
         assertTrue(output.contains("=== Staged Files ==="), "Should list staged files (empty in this case)");
         assertTrue(output.contains("=== Removed Files ==="), "Should list removed files (empty in this case)");
+    }
+
+    @Test
+    public void testFileStatus2() {
+        // 创建并 add file1
+        // 创建并 add file2
+        // 创建并 add file3
+        // 创建并 add file4
+        // 创建并 add file5
+        // commit
+        // status 应无文件输出
+
+        // 创建新 branch
+        // 移动 head 至新 branch
+
+        // remove file1 (removed)
+        // remove file2 (removed)
+        // 重新创建 file2 (removed + untracked)
+        // 工作区手动修改 file3 (modified)
+        // 工作区手动删除 file4 (deleted)
+        // 创建 file6 并 add (staged)
+        // 创建 file7 并 add (staged)
+        // 手动删除 file7 (staged + deleted)
+        // 创建 file8 (untracked)
+
+        Repository.setup();
+
+        // 创建并 add file1 到 file5
+        String[] files = {"file1.txt", "file2.txt", "file3.txt", "file4.txt", "file5.txt"};
+        for (String f : files) {
+            File file = Utils.join(Repository.CWD, f);
+            Utils.createFile(file);
+            Utils.writeContents(file, "original " + f);
+            Repository.addFile(f);
+        }
+
+        Repository.commit("commit file1~5");
+
+        // 创建新分支并切换
+        Repository.branch("dev");
+        Repository.checkout(new String[]{"dev"});
+
+        // remove file1
+        Repository.remove("file1.txt");
+
+        // remove file2，然后重新创建 file2（模拟 untracked）
+        Repository.remove("file2.txt");
+        File file2 = Utils.join(Repository.CWD, "file2.txt");
+        Utils.createFile(file2);
+        Utils.writeContents(file2, "original file2");
+
+        // 修改 file3
+        File file3 = Utils.join(Repository.CWD, "file3.txt");
+        Utils.writeContents(file3, "modified file3");
+
+        // 删除 file4
+        File file4 = Utils.join(Repository.CWD, "file4.txt");
+        file4.delete();
+
+        // 创建并 add file6
+        File file6 = Utils.join(Repository.CWD, "file6.txt");
+        Utils.createFile(file6);
+        Utils.writeContents(file6, "content6");
+        Repository.addFile("file6.txt");
+
+        // 创建并 add file7，然后删除 file7
+        File file7 = Utils.join(Repository.CWD, "file7.txt");
+        Utils.createFile(file7);
+        Utils.writeContents(file7, "content7");
+        Repository.addFile("file7.txt");
+        file7.delete();
+
+        // 创建 file8（untracked）
+        File file8 = Utils.join(Repository.CWD, "file8.txt");
+        Utils.createFile(file8);
+        Utils.writeContents(file8, "file8 content");
+
+        // 捕获 status 输出
+        // 调用 status 应输出以下信息：
+        // branches: *新 branch, main
+        // staged: file6, file7
+        // removed（按字母顺序排列输出）: file1, file2
+        // modified（按字母顺序排列输出）: file3 (modified), file4 (deleted), file7 (deleted)
+        // untracked（按字母顺序排列输出）: file2, file8
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(out));
+        Repository.status();
+        System.setOut(originalOut);
+
+        String statusOut = out.toString();
+        assertTrue(statusOut.contains("=== Branches ===\n*dev\nmain"), "Branch section should list current branch 'dev' and 'main'");
+        assertTrue(statusOut.contains("=== Staged Files ===\nfile6.txt\nfile7.txt"), "file6 and file7 should be listed in staged files");
+        assertTrue(statusOut.contains("=== Removed Files ===\nfile1.txt\nfile2.txt"), "file1 and file2 should be listed in removed files");
+        assertTrue(statusOut.contains("=== Modifications Not Staged For Commit ===\nfile3.txt (modified)\nfile4.txt (deleted)\nfile7.txt (deleted)"),
+                   "file3, file4, file7 should be listed in modified section");
+        assertTrue(statusOut.contains("=== Untracked Files ===\nfile2.txt\nfile8.txt"), "file2 and file8 should be listed in untracked section");
+    }
+
+    @Test
+    public void myStatusTest() {
+        Repository.setup();
+
+        // add file
+        File file1 = Utils.join(Repository.CWD, FILE_NAME1);
+        Utils.createFile(file1);
+        Utils.writeContents(file1, "1");
+        Repository.addFile(FILE_NAME1);
+
+        // commit
+        Repository.commit("1");
+
+        // rm file
+        Repository.remove(FILE_NAME1);
+
+        // 手动创建，并写入不同的内容
+        Utils.createFile(file1);
+        Utils.writeContents(file1, "2");
+
+        Repository.status();
+
+
+
     }
 }
