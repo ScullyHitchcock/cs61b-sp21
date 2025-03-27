@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class Commit implements Serializable, Dumpable {
@@ -76,14 +77,35 @@ public class Commit implements Serializable, Dumpable {
         return trackedFile;
     }
 
-    /* 跟踪文件名 fileName，以及文件哈希值 fileHash */
-    public void trackFile(String file, String fileHash) {
-        trackedFile.put(file, fileHash);
-        Utils.copyFile(fileHash, Repository.STAGING_BLOBS, Repository.BLOBS);
+    /* 解析 staging 区域的 addition 记录和 removal 记录，更新追踪文件状态 */
+    public void updateTrackingFiles(Map<String, String> addition, Map<String, String> removal) {
+        for (Map.Entry<String, String> entry: addition.entrySet()) {
+            String fileName = entry.getKey();
+            String fileHash = entry.getValue();
+            trackFile(fileName, fileHash);
+        }
+        for (String fileTobeRemoved: removal.keySet()) {
+            untrackFile(fileTobeRemoved);
+        }
     }
 
+    /* 跟踪文件名 fileName，以及文件哈希值 fileHash，储存内容快照 blob */
+    private void trackFile(String file, String fileHash) {
+        trackedFile.put(file, fileHash);
+        permanentSaveBlob(fileHash);
+    }
+    /* 将 STAGING_BLOBS 文件夹中的文件快照复制到 BLOBS 文件夹中 */
+    private void permanentSaveBlob(String fileHash) {
+        File oldFile = Utils.join(Repository.STAGING_BLOBS, fileHash);
+        String content = Utils.readContentsAsString(oldFile);
+        File newFile = Utils.join(Repository.BLOBS, fileHash);
+        if (!newFile.exists()) {
+            Utils.createFile(newFile);
+            Utils.writeContents(newFile, content);
+        }
+    }
     /* 取消跟踪文件 fileName */
-    public void untrackFile(String fileName) {
+    private void untrackFile(String fileName) {
         trackedFile.remove(fileName);
     }
 
@@ -94,7 +116,7 @@ public class Commit implements Serializable, Dumpable {
 
     /* 如果 commit 正在追踪的文件 fileName 没有变化，返回 true */
     public boolean isTrackingSame(String fileName) {
-        String fileHash = Utils.fileHash(fileName);
+        String fileHash = Utils.fileHashInCWD(fileName);
         if (isTracking(fileName) && fileHash != null) {
             return (fileHash.equals(trackedFile.get(fileName)));
         }

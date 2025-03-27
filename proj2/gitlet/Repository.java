@@ -83,7 +83,9 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-        if (!hasFile(CWD, fileName)) {
+
+        // fileManager 利用 headCommit 和 fileName
+        if (!fileManager.isInCWD(fileName)) {
             throw error("File does not exist.");
         }
         if (headCommit.isTrackingSame(fileName)) {
@@ -101,7 +103,8 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-        if ((!hasFile(CWD, fileName)) || (fileManager.isNotTracking(headCommit, fileName))) {
+
+        if ((!fileManager.isInCWD(fileName)) || (fileManager.isNotTracking(headCommit, fileName))) {
             throw error("No reason to remove the file.");
         }
         if (headCommit.isTracking(fileName)) {
@@ -116,7 +119,7 @@ public class Repository {
 
         FileManager fileManager = callFileManager();
         Map<String, String> addition = fileManager.getAddition();
-        Set<String> removal = fileManager.getRemoval();
+        Map<String, String> removal = fileManager.getRemoval();
 
         // 如果 addition 和 removal 都是空的，直接报错
         if (addition.isEmpty() && removal.isEmpty()) {
@@ -127,14 +130,8 @@ public class Repository {
         CommitManager commitManager = callCommitManager();
         Commit headCommit = commitManager.getHeadCommit();
         Commit newCommit = headCommit.childCommit(commitMessage);
-        for (Map.Entry<String, String> entry: addition.entrySet()) {
-            String fileName = entry.getKey();
-            String fileHash = entry.getValue();
-            newCommit.trackFile(fileName, fileHash);
-        }
-        for (String fileTobeRemoved: removal) {
-            newCommit.untrackFile(fileTobeRemoved);
-        }
+        newCommit.updateTrackingFiles(addition, removal);
+
         commitManager.addCommit(newCommit);
         commitManager.save();
 
@@ -151,7 +148,7 @@ public class Repository {
             // Print current commit details
             printLog(cur);
             // Determine the parent commit
-            String parentId = manager.ParentHash(cur.id());
+            String parentId = manager.ParentId(cur.id());
             if (parentId == null || !manager.containsCommit(parentId)) {
                 break;
             }
@@ -398,6 +395,8 @@ public class Repository {
         commitManager.save();
     }
 
+
+    /* 1  */
     public static void merge(String branch) {
     }
 }

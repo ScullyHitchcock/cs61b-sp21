@@ -306,10 +306,6 @@ class Utils {
         System.out.println();
     }
 
-    static boolean hasFile(File dir, String fileName) {
-        return join(dir, fileName).exists();
-    }
-
     static void createFile(File file) {
         try {
             file.createNewFile();
@@ -327,17 +323,7 @@ class Utils {
         }
     }
 
-    static void copyFile(String fileName, File oldDir, File newDir) {
-        File oldFile = join(oldDir, fileName);
-        String content = readContentsAsString(oldFile);
-        File newFile = join(newDir, fileName);
-        if (!newFile.exists()) {
-            createFile(newFile);
-            writeContents(newFile, content);
-        }
-    }
-
-    static String fileHash(String fileName) {
+    static String fileHashInCWD(String fileName) {
         File file = join(Repository.CWD, fileName);
         if (!file.exists()) return null;
         String content = readContentsAsString(file);

@@ -99,7 +99,7 @@ public class CommitManager implements Serializable {
     }
 
     /* 根据当前 commit id 返回其第一个父 commit id，如果 id 不存在或没有父 commit，返回 null */
-    public String ParentHash(String id) {
+    public String ParentId(String id) {
         if (!commits.containsKey(id)) return null;
         Commit commit = getCommit(id);
         List<String> parents = commit.getParentIds();

@@ -163,7 +163,7 @@ public class RepositoryTest {
         Repository.remove(FILE_NAME1);
         // FILE_MANAGER 的 removal 应该记录 FILE_NAME1
         FileManager fileManager = Utils.readObject(Repository.FILE_MANAGER, FileManager.class);
-        assertTrue(fileManager.getRemoval().contains(FILE_NAME1), "FILE_NAME1 should be marked for removal in FILE_MANAGER");
+        assertTrue(fileManager.getRemoval().containsKey(FILE_NAME1), "FILE_NAME1 should be marked for removal in FILE_MANAGER");
         // FILE_MANAGER 的 addition 应该不记录 FILE_NAME1
         assertFalse(fileManager.getAddition().containsKey(FILE_NAME1), "FILE_NAME1 should not be in addition after removal");
         // CWD 应该没有 FILE_NAME1
@@ -185,7 +185,7 @@ public class RepositoryTest {
         Repository.remove(FILE_NAME2);
         // REMOVAL 应该没有 FILE_NAME2
         fileManager = Utils.readObject(Repository.FILE_MANAGER, FileManager.class);
-        assertFalse(fileManager.getRemoval().contains(FILE_NAME2), "FILE_NAME2 should not be marked for removal after being unstaged");
+        assertFalse(fileManager.getRemoval().containsKey(FILE_NAME2), "FILE_NAME2 should not be marked for removal after being unstaged");
 
         // CWD 应该仍然有 FILE_NAME2
         assertTrue(Utils.join(Repository.CWD, FILE_NAME2).exists(), "Working directory should still contain " + FILE_NAME2);
