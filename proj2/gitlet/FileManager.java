@@ -153,13 +153,14 @@ public class FileManager implements Serializable {
     static void checkout(Commit commit) {
         Map<String, String> branchTrackingFiles = commit.getTrackedFile();
         for (String fileName: branchTrackingFiles.keySet()) {
-            if (commit.isTrackingDifferent(fileName)) {
+            // 只要工作区的文件与追踪的版本不同，或追踪的文件不在工作区中，都进行 checkout
+            if (!commit.isTrackingSame(fileName)) {
                 checkout(commit, fileName);
             }
         }
     }
 
-    /* 把 fileName 的在工作区的内容恢复为 commit 记录的状态 */
+    /* 在工作区中创建或覆盖 commit 所追踪的内容 */
     static void checkout(Commit commit, String fileName) {
         String fileHash = commit.getTrackedFile().get(fileName);
         String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOBS, fileHash));

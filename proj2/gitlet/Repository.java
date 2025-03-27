@@ -398,5 +398,8 @@ public class Repository {
 
     /* 1  */
     public static void merge(String branch) {
+        // 如果当前暂存区非空，报错 "You have uncommitted changes."
+        // 如果分支 branch 不存在，报错 "A branch with that name does not exist."
+        // 如果当前分支与 branch 相同，报错 "Cannot merge a branch with itself."
     }
 }

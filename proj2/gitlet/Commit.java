@@ -146,6 +146,7 @@ public class Commit implements Serializable, Dumpable {
 
     /* 传入另一个 Commit 对象 otherCommit，合并后返回新 Commit 对象 */
     public Commit merge(Commit otherCommit) {
+
         return null;
     }
 
