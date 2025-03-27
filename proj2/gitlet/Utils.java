@@ -346,17 +346,17 @@ class Utils {
 
     /* 在文件夹 dir 中创建文件 fileName，写入内容 content，如果文件已存在，则覆盖原内容 */
     static void createOrOverride(File dir, String fileName, String newContent) {
-        File file = Utils.join(dir, fileName);
-        if (!Utils.plainFilenamesIn(dir).contains(fileName)) {
-            Utils.createFile(file);
+        File file = join(dir, fileName);
+        if (!plainFilenamesIn(dir).contains(fileName)) {
+            createFile(file);
         }
-        Utils.writeContents(file, newContent);
+        writeContents(file, newContent);
     }
 
     /* 在文件夹 dir 中删除文件 fileName */
     static void deleteFileFrom(File dir, String fileName) {
-        if (Utils.join(dir, fileName).exists()) {
-            Utils.join(dir, fileName).delete();
+        if (join(dir, fileName).exists()) {
+            join(dir, fileName).delete();
         }
     }
 }

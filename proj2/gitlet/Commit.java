@@ -51,12 +51,13 @@ public class Commit implements Serializable, Dumpable {
         parentCommits.add(id);
     }
 
+    /* 返回提交 id */
     public String id() {
         return commitId;
     }
 
-    /* 返回 commit 的第一父 commit */
-    public List<String> getParentHash() {
+    /* 返回所有父 commit 的 id 列表 */
+    public List<String> getParentIds() {
         return parentCommits;
     }
 
@@ -75,7 +76,7 @@ public class Commit implements Serializable, Dumpable {
         return trackedFile;
     }
 
-    /* 跟踪文件名 fileName，以及文件哈希码 fileHash */
+    /* 跟踪文件名 fileName，以及文件哈希值 fileHash */
     public void trackFile(String file, String fileHash) {
         trackedFile.put(file, fileHash);
         Utils.copyFile(fileHash, Repository.STAGING_BLOBS, Repository.BLOBS);
@@ -86,7 +87,7 @@ public class Commit implements Serializable, Dumpable {
         trackedFile.remove(fileName);
     }
 
-    /* 如果 this 正在追踪文件 fileName，返回true，否则false */
+    /* 如果 this 正在追踪文件 fileName，返回true，否则 false */
     public boolean isTracking(String fileName) {
         return trackedFile.containsKey(fileName);
     }

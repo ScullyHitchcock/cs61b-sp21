@@ -594,28 +594,71 @@ public class RepositoryTest {
     }
 
     @Test
-    public void myStatusTest() {
+    public void resetTest() {
         Repository.setup();
 
-        // add file
-        File file1 = Utils.join(Repository.CWD, FILE_NAME1);
-        Utils.createFile(file1);
-        Utils.writeContents(file1, "1");
-        Repository.addFile(FILE_NAME1);
+        // 创建 3 个文件 A B C 暂存并提交
+        // 获取提交 id a
+        // 新建分支
+        // checkout 分支
+        // rm 文件 A
+        // 修改另外两个文件 B C
+        // 新建第 4 份文件 D
+        // 暂存并提交
+        // reset a
+        // 创建文件 A B C
+        String fileA = "A.txt", fileB = "B.txt", fileC = "C.txt", fileD = "D.txt";
+        Utils.writeContents(Utils.join(Repository.CWD, fileA), "Content A");
+        Utils.writeContents(Utils.join(Repository.CWD, fileB), "Content B");
+        Utils.writeContents(Utils.join(Repository.CWD, fileC), "Content C");
 
-        // commit
-        Repository.commit("1");
+        Repository.addFile(fileA);
+        Repository.addFile(fileB);
+        Repository.addFile(fileC);
+        Repository.commit("commit ABC");
 
-        // rm file
-        Repository.remove(FILE_NAME1);
+        CommitManager manager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
+        String commitA = manager.getHeadCommit().id();
 
-        // 手动创建，并写入不同的内容
-        Utils.createFile(file1);
-        Utils.writeContents(file1, "2");
+        // 新建分支并切换
+        Repository.branch("dev");
+        Repository.checkout(new String[]{"dev"});
 
-        Repository.status();
+        // 删除 A
+        Repository.remove(fileA);
 
+        // 修改 B C
+        Utils.writeContents(Utils.join(Repository.CWD, fileB), "Modified B");
+        Utils.writeContents(Utils.join(Repository.CWD, fileC), "Modified C");
 
+        // 创建 D
+        Utils.writeContents(Utils.join(Repository.CWD, fileD), "Content D");
 
+        Repository.addFile(fileB);
+        Repository.addFile(fileC);
+        Repository.addFile(fileD);
+        Repository.commit("modify BC and add D");
+
+        // reset 到 commitA
+        Repository.reset(commitA);
+
+        // 断言：只有 A B C 存在，且内容是原始内容
+        File cwdA = Utils.join(Repository.CWD, fileA);
+        File cwdB = Utils.join(Repository.CWD, fileB);
+        File cwdC = Utils.join(Repository.CWD, fileC);
+        File cwdD = Utils.join(Repository.CWD, fileD);
+
+        assertTrue(cwdA.exists(), "File A should exist after reset");
+        assertTrue(cwdB.exists(), "File B should exist after reset");
+        assertTrue(cwdC.exists(), "File C should exist after reset");
+        assertFalse(cwdD.exists(), "File D should not exist after reset");
+
+        assertEquals("Content A", Utils.readContentsAsString(cwdA), "Content of A should be original");
+        assertEquals("Content B", Utils.readContentsAsString(cwdB), "Content of B should be original");
+        assertEquals("Content C", Utils.readContentsAsString(cwdC), "Content of C should be original");
+
+        // 断言：HEAD commit id 等于 commitA
+        CommitManager afterResetManager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
+        assertEquals(commitA, afterResetManager.getHeadCommit().id(), "HEAD should point to original commit A");
     }
 }

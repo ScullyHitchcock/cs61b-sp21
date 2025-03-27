@@ -137,9 +137,9 @@ public class FileManager implements Serializable {
     static void checkout(Commit commit) {
         Map<String, String> branchTrackingFiles = commit.getTrackedFile();
         for (String fileName: branchTrackingFiles.keySet()) {
-            String fileHash = commit.getTrackedFile().get(fileName);
-            String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOBS, fileHash));
-            Utils.createOrOverride(Repository.CWD, fileName, blobContent);
+            if (commit.isTrackingDifferent(fileName)) {
+                checkout(commit, fileName);
+            }
         }
     }
 
@@ -207,5 +207,4 @@ public class FileManager implements Serializable {
         Collections.sort(untrackedFiles);
         return untrackedFiles;
     }
-
 }

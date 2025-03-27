@@ -5,10 +5,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
 import static gitlet.Utils.*;
-
-// TODO: any imports you need here
 
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -17,13 +14,6 @@ import static gitlet.Utils.*;
  *  @author CST
  */
 public class Repository {
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Repository class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided two examples for you.
-     */
 
     /** The current working directory. */
     public static File CWD = new File(System.getProperty("user.dir"));
@@ -93,8 +83,8 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-        if (!Utils.hasFile(CWD, fileName)) {
-            throw Utils.error("File does not exist.");
+        if (!hasFile(CWD, fileName)) {
+            throw error("File does not exist.");
         }
         if (headCommit.isTrackingSame(fileName)) {
             fileManager.removeFromAddition(fileName);
@@ -111,12 +101,12 @@ public class Repository {
 
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
-        if (fileManager.isNotTracking(headCommit, fileName) || !Utils.hasFile(CWD, fileName)) {
-            throw Utils.error("No reason to remove the file.");
+        if ((!hasFile(CWD, fileName)) || (fileManager.isNotTracking(headCommit, fileName))) {
+            throw error("No reason to remove the file.");
         }
         if (headCommit.isTracking(fileName)) {
             fileManager.addToRemoval(fileName);
-            Utils.deleteFileFrom(CWD, fileName);
+            deleteFileFrom(CWD, fileName);
         }
         fileManager.removeFromAddition(fileName);
         fileManager.save();
@@ -130,7 +120,7 @@ public class Repository {
 
         // 如果 addition 和 removal 都是空的，直接报错
         if (addition.isEmpty() && removal.isEmpty()) {
-            throw Utils.error("No changes added to the commit.");
+            throw error("No changes added to the commit.");
         }
 
         // 读取 head，创建子 commit 更新追踪状态，增加追踪或取消跟踪等
@@ -187,10 +177,10 @@ public class Repository {
         String commitMsg = commit.getMessage();
         String commitId = commit.id();
 
-        Utils.message("===");
-        Utils.message("commit %s", commitId);
-        Utils.message("Date: %s", formattedTime);
-        Utils.message("%s", commitMsg);
+        message("===");
+        message("commit %s", commitId);
+        message("Date: %s", formattedTime);
+        message("%s", commitMsg);
         System.out.println();
 
     }
@@ -200,7 +190,7 @@ public class Repository {
         CommitManager manager = callCommitManager();
         List<Commit> commitsWithMsg = manager.findByMessage(msg);
         if (commitsWithMsg.isEmpty()) {
-            throw Utils.error("Found no commit with that message.");
+            throw error("Found no commit with that message.");
         }
         for (Commit commit: commitsWithMsg) {
             System.out.println(commit.id());
@@ -223,37 +213,33 @@ public class Repository {
 
             // 如果你输入的分支名在分支列表中找不到，直接报错，不要进行任何操作。
             if (!commitManager.containsBranch(branch)) {
-                throw Utils.error("No such branch exists.");
+                throw error("No such branch exists.");
             }
             // 如果你试图切换到你已经在的分支，没有必要做任何事，直接报错退出。
             if (branch.equals(commitManager.headBranch())) {
-                throw Utils.error("No need to checkout the current branch.");
+                throw error("No need to checkout the current branch.");
             }
             // 如果工作目录中有某个文件，它：
             //	•	没有被当前分支追踪（就是你之前没 add、也没 commit），
             //	•	但是在目标分支中存在该文件（会被 checkout 覆盖），
             //→ 这种情况下要报错退出，不能执行 checkout。防止覆盖用户未保存的修改。
-            List<String> files = Utils.plainFilenamesIn(CWD);
+            List<String> files = plainFilenamesIn(CWD);
             for (String fileName: files) {
                 if (!head.isTracking(fileName) && branchCommit.isTrackingDifferent(fileName)) {
-                    throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
+                    throw error("There is an untracked file in the way; delete it, or add and commit it first.");
                 }
             }
             // 以上异常检查通过后，从“目标分支的最新 commit”中提取所有文件，把它们放进工作目录（CWD）中，如果工作目录已经存在这些文件，就覆盖它们。
             // 这个命令执行完后，当前分支（HEAD）会切换成你指定的分支。
             // 如果有些文件被当前分支追踪、但在目标分支的最新 commit 中没有这些文件，那么这些文件会从工作目录中删除。
             // 切换分支时 staging 区会被清空（除非你 checkout 的正好是当前分支）。
-//            Map<String, String> branchTrackingFiles = branchCommit.getTrackedFile();
             Map<String, String> headTrackingFiles = head.getTrackedFile();
             for (String fileName: headTrackingFiles.keySet()) {
                 if (head.isTracking(fileName) && !branchCommit.isTracking(fileName)) {
-                    Utils.deleteFileFrom(CWD, fileName);
+                    deleteFileFrom(CWD, fileName);
                 }
             }
             FileManager.checkout(branchCommit);
-//            for (String fileName: branchTrackingFiles.keySet()) {
-//                FileManager.checkout(branchCommit, fileName);
-//            }
             commitManager.changeHeadTo(branch);
             fileManager.clearStageArea();
         }
@@ -275,9 +261,9 @@ public class Repository {
                 // The new version of the file is not staged.
                 fileName = checkoutArgs[2];
                 commit = commitManager.getCommit(checkoutArgs[0]);
-                if (commit == null) throw Utils.error("No commit with that id exists.");
+                if (commit == null) throw error("No commit with that id exists.");
             }
-            if (!commit.isTracking(fileName)) throw Utils.error("File does not exist in that commit.");
+            if (!commit.isTracking(fileName)) throw error("File does not exist in that commit.");
             FileManager.checkout(commit, fileName);
         }
         commitManager.save();
@@ -291,7 +277,7 @@ public class Repository {
         if (created) {
             manager.save();
         } else {
-            throw Utils.error("A branch with that name already exists.");
+            throw error("A branch with that name already exists.");
         }
     }
 
@@ -299,10 +285,10 @@ public class Repository {
     public static void rmBranch(String branch) {
         CommitManager commitManager = callCommitManager();
         if (branch.equals(commitManager.headBranch())) {
-            throw Utils.error("Cannot remove the current branch.");
+            throw error("Cannot remove the current branch.");
         }
         if (!commitManager.containsBranch(branch)) {
-            throw Utils.error("A branch with that name does not exist.");
+            throw error("A branch with that name does not exist.");
         }
         commitManager.removeBranch(branch);
         commitManager.save();
@@ -386,23 +372,30 @@ public class Repository {
         }
     }
 
+    /* 选择特定 commit，将当前工作区全部内容恢复成该 commit 追踪的状态，重新设置该 commit 为 HEAD。
+    *  创建 commit 追踪但 CWD 不存在的新文件，覆盖同名文件，删除 commit 没有追踪但 CWD 存在的文件。*/
     public static void reset(String commitId) {
         CommitManager commitManager = callCommitManager();
         Commit commit = commitManager.getCommit(commitId);
         if (commit == null) {
-            throw Utils.error("No commit with that id exists.");
+            throw error("No commit with that id exists.");
         }
         FileManager fileManager = callFileManager();
         if (!fileManager.getUntrackedFiles(commitManager.getHeadCommit()).isEmpty()) {
-            throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
+            throw error("There is an untracked file in the way; delete it, or add and commit it first.");
         }
         // 将工作区中的所有文件恢复成 commit 时的状态
-        // 清空工作区
-        Utils.clean(CWD);
-        // checkout
+        // 1 清空工作区
+        clean(CWD);
+        // 2 checkout
         FileManager.checkout(commit);
-        // 重新设置 headCommit
+        // 3 重新设置 headCommit
         commitManager.resetHeadCommit(commitId);
+        // 4 清空暂存区
+        fileManager.clearStageArea();
+        // 5 保存
+        fileManager.save();
+        commitManager.save();
     }
 
     public static void merge(String branch) {

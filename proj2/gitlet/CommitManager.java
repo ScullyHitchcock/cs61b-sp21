@@ -39,7 +39,7 @@ public class CommitManager implements Serializable {
         Utils.writeObject(Repository.COMMIT_MANAGER, this);
     }
 
-    /** 获取分支名列表 */
+    /* 获取分支名列表 */
     public List<String> getBranches() {
         List<String> branches = new ArrayList<>(branchs.keySet());
         Collections.sort(branches);
@@ -51,7 +51,7 @@ public class CommitManager implements Serializable {
         return headBranchName;
     }
 
-    /* 返回 HEAD 分支的 commit 哈希码 */
+    /* 返回 HEAD 分支的 commit id */
     public String getHeadHash() {
         return branchs.get(headBranchName);
     }
@@ -62,33 +62,35 @@ public class CommitManager implements Serializable {
         return getCommit(headHash);
     }
 
+    /* 传入 commit id，将对应的 commit 设置为 HEAD */
     public void resetHeadCommit(String id) {
         if (commits.containsKey(id)) {
             branchs.put(headBranchName, id);
         }
     }
 
+    /* 传入 branch 名，返回该 branch 的最新 commit 对象，若 branch 不存在，返回 null */
     public Commit getBranchCommit(String branch) {
         String branchCommitHash = branchs.get(branch);
         if (branchCommitHash == null) return null;
         return getCommit(branchCommitHash);
     }
 
-    /* 根据哈希值访问对应的 Commit 对象数据，如果不存在，返回 null */
+    /* 根据 id 访问对应的 Commit 对象数据，如果不存在，返回 null */
     public Commit getCommit(String id) {
         File commitFile = Utils.join(Repository.COMMITS, id);
         if (!commitFile.exists()) return null;
         return Utils.readObject(commitFile, Commit.class);
     }
 
-    /* 以列表形式返回所有 commit 哈希码 */
+    /* 以 Map 形式返回所有 commit id 和 commit msg */
     public HashMap<String, String> getAllCommits() {
         return commits;
     }
 
-    /* 判断 manager 是否储存了指定 commit 哈希码 */
-    public boolean containsCommit(String hashcode) {
-        return commits.containsKey(hashcode);
+    /* 判断 manager 是否储存了指定 commit id */
+    public boolean containsCommit(String id) {
+        return commits.containsKey(id);
     }
 
     /* 判断 manager 是否有指定分支名 */
@@ -96,13 +98,13 @@ public class CommitManager implements Serializable {
         return branchs.containsKey(branchName);
     }
 
-    /* 根据当前 commit 哈希值查找其第一父 commit 哈希值*/
-    public String ParentHash(String hashcode) {
-        if (!commits.containsKey(hashcode)) return null;
-        Commit commit = getCommit(hashcode);
-        List<String> parents = commit.getParentHash();
+    /* 根据当前 commit id 返回其第一个父 commit id，如果 id 不存在或没有父 commit，返回 null */
+    public String ParentHash(String id) {
+        if (!commits.containsKey(id)) return null;
+        Commit commit = getCommit(id);
+        List<String> parents = commit.getParentIds();
         if (parents.isEmpty()) return null;
-        return commit.getParentHash().get(0);
+        return commit.getParentIds().get(0);
     }
 
     /* 添加一个 Commit 对象到 manager 中 */
