@@ -306,6 +306,13 @@ class Utils {
         System.out.println();
     }
 
+    /**
+     * Deletes all plain files in the specified directory.
+     *
+     * @param dir The directory whose plain files are to be deleted. If the directory
+     *            contains no plain files or does not denote a valid directory, no
+     *            operation will be performed.
+     */
     static void clean(File dir) {
         List<String> files = plainFilenamesIn(dir);
         if (files != null) {
@@ -315,6 +322,15 @@ class Utils {
         }
     }
 
+    /**
+     * Computes the SHA-1 hash for a file in the current working directory (CWD).
+     * If the file does not exist, returns null.
+     *
+     * @param fileName The name of the file in the current working directory
+     *                 whose hash is to be computed.
+     * @return The SHA-1 hash of the file's name and contents if the file
+     *                 exists; otherwise, returns null.
+     */
     static String fileHashInCWD(String fileName) {
         File file = join(Repository.CWD, fileName);
         if (!file.exists()) return null;

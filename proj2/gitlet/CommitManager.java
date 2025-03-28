@@ -5,27 +5,26 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Commit 管理器
+ * 管理所有提交（Commit）对象和分支信息。
+ * 负责维护提交图、分支指针、HEAD 状态等。
  */
 public class CommitManager implements Serializable {
     // 使用哈希集合，只存放 Commit 对象的哈希值
-    private HashMap<String, String> commits;
+    private final HashMap<String, String> commits;
 
     /* HEAD 指针，指向当前活跃的分支名 */
     private String headBranchName;
 
-    /* 分支指针 map，key为分支名，val为当前分支的最新 commit 哈希值*/
-    private HashMap<String, String> branchs;
+    /* 分支指针 map，key为分支名，val为当前分支的最新 commit 哈希值 */
+    private final HashMap<String, String> branches;
 
     /**
-     * 初始化 manager
-     * 1，创建 head 指针，指向默认 main 分支
-     * 2，创建 initCommit
-     * 4，将 initCommit 加入 commits 中，main 指向它
+     * 初始化 CommitManager。
+     * 创建 main 分支和初始提交，并将其添加到提交集合中。
      */
     public CommitManager() {
         commits = new HashMap<>();
-        branchs = new HashMap<>();
+        branches = new HashMap<>();
         headBranchName = "main";
         Commit initCommit = Commit.createInitCommit();
         addCommit(initCommit);
@@ -38,7 +37,7 @@ public class CommitManager implements Serializable {
 
     /* 获取分支名列表 */
     public List<String> getBranches() {
-        List<String> branches = new ArrayList<>(branchs.keySet());
+        List<String> branches = new ArrayList<>(this.branches.keySet());
         Collections.sort(branches);
         return branches;
     }
@@ -48,27 +47,32 @@ public class CommitManager implements Serializable {
         return headBranchName;
     }
 
-    /* 返回 HEAD 分支的 commit id */
-    public String getHeadHash() {
-        return branchs.get(headBranchName);
-    }
-
     /* 返回当前 head 指针指向的 Commit 对象 */
     public Commit getHeadCommit() {
-        String headHash = getHeadHash();
+        String headHash = branches.get(headBranchName);
         return getCommit(headHash);
+    }
+
+    /* 以 Map 形式返回所有 commit id 和 commit msg */
+    public HashMap<String, String> getAllCommits() {
+        return commits;
+    }
+
+    /* 切换当前 head 指针到指定分支上 */
+    public void changeHeadTo(String branchName) {
+        if (branches.containsKey(branchName)) {
+            headBranchName = branchName;
+        }
     }
 
     /* 传入 commit id，将对应的 commit 设置为 HEAD */
     public void resetHeadCommit(String id) {
-        if (commits.containsKey(id)) {
-            branchs.put(headBranchName, id);
-        }
+        branches.put(headBranchName, id);
     }
 
     /* 传入 branch 名，返回该 branch 的最新 commit 对象，若 branch 不存在，返回 null */
     public Commit getBranchCommit(String branch) {
-        String branchCommitHash = branchs.get(branch);
+        String branchCommitHash = branches.get(branch);
         if (branchCommitHash == null) return null;
         return getCommit(branchCommitHash);
     }
@@ -80,79 +84,37 @@ public class CommitManager implements Serializable {
         return Utils.readObject(commitFile, Commit.class);
     }
 
-    /* 以 Map 形式返回所有 commit id 和 commit msg */
-    public HashMap<String, String> getAllCommits() {
-        return commits;
-    }
-
-    /* 判断 manager 是否储存了指定 commit id */
-    public boolean containsCommit(String id) {
-        return commits.containsKey(id);
-    }
-
     /* 判断 manager 是否有指定分支名 */
     public boolean containsBranch(String branchName) {
-        return branchs.containsKey(branchName);
+        return branches.containsKey(branchName);
     }
 
-    /* 根据当前 commit id 返回其第一个父 commit id，如果 id 不存在或没有父 commit，返回 null */
-    public List<String> getParentIds(String id) {
-        if (!commits.containsKey(id)) return null;
-        Commit commit = getCommit(id);
-        List<String> parents = commit.getParentIds();
-        if (parents.isEmpty()) return null;
-        return commit.getParentIds();
-    }
-
-    /* 添加一个 Commit 对象到 manager 中 */
+    /**
+     * 添加一个 Commit 对象到提交集合，并更新当前分支的最新提交指针。
+     *
+     * @param commit 要添加的提交对象
+     */
     public void addCommit(Commit commit) {
         String id = commit.save();
         String commitMessage = commit.getMessage();
-        addCommit(id, commitMessage);
-    }
-    /* 添加一个 Commit 哈希名称到 manager 中 */
-    public void addCommit(String id, String msg) {
-        commits.put(id, msg);
-        branchs.put(headBranchName, id);
+        commits.put(id, commitMessage);
+        resetHeadCommit(id);
     }
 
     /* 创建新分支引用，成功创建返回 true，否则 false */
     public boolean createNewBranch(String branchName) {
-        if (branchs.containsKey(branchName)) return false;
-        String headCommitHash = branchs.get(headBranchName);
-        branchs.put(branchName, headCommitHash);
+        if (branches.containsKey(branchName)) return false;
+        String headCommitHash = branches.get(headBranchName);
+        branches.put(branchName, headCommitHash);
         return true;
     }
 
-    /* 仅删除分支引用，不影响 commits，成功删除返回 true，否则 false */
-    public boolean removeBranch(String branchName) {
-        if (!branchs.containsKey(branchName)) return false;
-        branchs.remove(branchName);
-        return true;
+    /* 仅删除分支引用，不影响 commits */
+    public void removeBranch(String branchName) {
+        branches.remove(branchName);
     }
 
-    /* 切换当前 head 指针到指定分支上 */
-    public boolean changeHeadTo(String branchName) {
-        if (branchs.containsKey(branchName)) {
-            headBranchName = branchName;
-            return true;
-        }
-        return false;
-    }
-
-    public void merge(String branchName) {
-        if (branchs.containsKey(branchName)) {
-            String headCommitHash = branchs.get(headBranchName);
-            String branchCommitHash = branchs.get(branchName);
-
-            Commit headCommit = getCommit(headCommitHash);
-            Commit branchCommit = getCommit(branchCommitHash);
-            Commit newCommit = headCommit.mergeCommit(branchCommit);
-
-            addCommit(newCommit);
-        }
-    }
-
+    /* 输入指定提交信息 msg，输出带有此信息的 commit id 列表 */
     public List<Commit> findByMessage(String msg) {
         ArrayList<Commit> res = new ArrayList<>();
         for (Map.Entry<String, String> entry: commits.entrySet()) {
@@ -165,7 +127,14 @@ public class CommitManager implements Serializable {
         return res;
     }
 
-    /* 传入两个 commitId，返回他们之间的最近共同祖先 Commit*/
+    /**
+     * 查找两个提交的最近共同祖先（split point）。
+     * 通过广度优先搜索第一个出现在另一个提交祖先集合中的节点。
+     *
+     * @param commitId1 第一个提交的 ID
+     * @param commitId2 第二个提交的 ID
+     * @return 最近公共祖先的 Commit 对象
+     */
     public Commit findSplitPoint(String commitId1, String commitId2) {
         // 先获得 commitId1 的所有祖先
         Set<String> ancestors = getAllAncestors(commitId1);
@@ -175,11 +144,12 @@ public class CommitManager implements Serializable {
         Set<String> visited = new HashSet<>();
         while (!queue.isEmpty()) {
             String currentId = queue.poll();
+            Commit currentCommit = getCommit(currentId);
             if (ancestors.contains(currentId)) {
-                return getCommit(currentId);
+                return currentCommit;
             }
             visited.add(currentId);
-            List<String> parentIds = getParentIds(currentId);
+            List<String> parentIds = currentCommit.getParentIds();
             if (parentIds != null && !parentIds.isEmpty()) {
                 for (String parentId : parentIds) {
                     if (!visited.contains(parentId)) {
@@ -190,7 +160,13 @@ public class CommitManager implements Serializable {
         }
         return null;  // 理论上不可能没有公共祖先
     }
-    /* 传入 commitId，返回它的所有祖先的 id */
+
+    /**
+     * 获取指定提交的所有祖先提交 ID，包括其自身。
+     *
+     * @param commitId 起始提交的 ID
+     * @return 包含所有祖先 ID 的集合
+     */
     private Set<String> getAllAncestors(String commitId) {
         Set<String> ancestors = new HashSet<>();
         Queue<String> queue = new LinkedList<>();
@@ -199,7 +175,7 @@ public class CommitManager implements Serializable {
         while (!queue.isEmpty()) {
             String currentId = queue.poll();
             ancestors.add(currentId);
-            List<String> parentIds = getParentIds(currentId);
+            List<String> parentIds = getCommit(currentId).getParentIds();
             // 遍历找出 current 的父 commit id，
             if (parentIds != null && !parentIds.isEmpty()) {
                 for (String parentId : parentIds) {

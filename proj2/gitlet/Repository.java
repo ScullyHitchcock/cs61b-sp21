@@ -7,9 +7,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import static gitlet.Utils.*;
 
-/** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
+/**
+ * 表示一个 Gitlet 仓库的操作接口类。
+ * 提供对版本库的所有核心命令操作，包括 init、add、commit、checkout、branch、reset、merge 等。
+ * 同时维护工作目录状态、暂存区、提交历史和分支指针。
  *
  *  @author CST
  */
@@ -29,7 +30,7 @@ public class Repository {
             public static File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
             public static File FILE_MANAGER = join(GITLET_DIR, "fileManager");
 
-    /* 供测试用 */
+    /** 仅供测试用 */
     public static void refreshCWDForUnitTest() {
         CWD = new File(System.getProperty("user.dir"));
         GITLET_DIR = join(CWD, ".gitlet");
@@ -40,10 +41,9 @@ public class Repository {
         FILE_MANAGER = join(GITLET_DIR, "fileManager");
     }
 
-    /** "init" 命令：初始化 gitlet
-     * 创建.gitlet目录和目录下的 commits 文件夹
-     * 初始化 commit tree，创建 init commit
-     * 将 commit tree 数据写入 commits 下的 CommitTree文件
+    /**
+     * 初始化版本库目录和初始提交。
+     * 创建 .gitlet 目录及其子目录，并生成初始提交。
      */
     public static void setup() {
 
@@ -62,19 +62,33 @@ public class Repository {
         fileManager.save();
     }
 
+    /**
+     * 从磁盘读取并返回 CommitManager 对象。
+     *
+     * @return CommitManager 管理器
+     */
     public static CommitManager callCommitManager() {
         return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
     }
+
+    /**
+     * 从磁盘读取并返回 FileManager 对象，同时更新文件状态。
+     *
+     * @return FileManager 管理器
+     */
     public static FileManager callFileManager() {
         FileManager manager = Utils.readObject(FILE_MANAGER, FileManager.class);
         manager.updateFiles();
         return manager;
     }
 
-    /** 1 如果没有被最新 commit 追踪则加入暂存区（创建或覆盖）
-     *  2 如果被最新 commit 追踪，则删除暂存区的内容（无论在不在）
-     *  3 最后删除文件在暂删区的记录（无论在不在）
-     * @param fileName
+    /**
+     * 将文件添加到暂存区：
+     * - 若文件被追踪且未发生变化，则从 addition 区移除；
+     * - 否则加入 addition；
+     * - 无论如何从 removal 区移除。
+     *
+     * @param fileName 文件名
      */
     public static void addFile(String fileName) {
         // 如果 fileName 被 head 追踪且与追踪的内容相同，则确保它在 fileManager.addition 中不存在
@@ -97,6 +111,12 @@ public class Repository {
         fileManager.save();
     }
 
+    /**
+     * 将文件标记为删除（加入 removal）并从工作目录中删除。
+     * 如果文件既不在暂存区也未被追踪，则报错。
+     *
+     * @param fileName 文件名
+     */
     public static void remove(String fileName) {
         // 如果被 HEAD 追踪：就将 fileName 标记为待删除，并删除工作目录中的该文件。
         // 无论如何确保 fileName 在 fileManager.addition 区中不存在。
@@ -115,6 +135,12 @@ public class Repository {
         fileManager.save();
     }
 
+    /**
+     * 提交当前暂存的改动，创建一个新的提交对象并更新分支指针。
+     *
+     * @param commitMessage 提交信息
+     * @param branch        若为合并提交，提供第二父提交所在分支名
+     */
     public static void commit(String commitMessage, String branch) {
 
         FileManager fileManager = callFileManager();
@@ -143,7 +169,9 @@ public class Repository {
         fileManager.save();
     }
 
-    /* 按顺序打印从 HEAD 所在的分支的 commit 回溯到 init commit 的提交信息（不打印其他分支） */
+    /**
+     * 打印当前分支的提交历史，从 HEAD 回溯到初始提交。
+     */
     public static void log() {
         CommitManager manager = callCommitManager();
         Commit cur = manager.getHeadCommit();
@@ -161,7 +189,9 @@ public class Repository {
         }
     }
 
-    /* 无序打印所有分支的所有 commit */
+    /**
+     * 打印所有分支的所有提交历史。
+     */
     public static void globalLog() {
         CommitManager manager = callCommitManager();
         Map<String, String> allCommits = manager.getAllCommits();
@@ -170,7 +200,11 @@ public class Repository {
         }
     }
 
-    /* 打印单个 commit 信息 */
+    /**
+     * 打印单个提交的详细信息。
+     *
+     * @param commit 提交对象
+     */
     private static void printLog(Commit commit) {
         Instant time = commit.getTime();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z", Locale.US)
@@ -187,7 +221,11 @@ public class Repository {
 
     }
 
-    /* 打印全部 commit message 为 msg 的 commit 的 id 字符串 */
+    /**
+     * 查找所有提交信息等于 msg 的提交 ID，并打印它们。
+     *
+     * @param msg 提交信息
+     */
     public static void find(String msg) {
         CommitManager manager = callCommitManager();
         List<Commit> commitsWithMsg = manager.findByMessage(msg);
@@ -199,69 +237,53 @@ public class Repository {
         }
     }
 
+    /**
+     * 根据参数执行分支或文件版本的切换操作。
+     *
+     * @param checkoutArgs 切换参数
+     */
     public static void checkout(String[] checkoutArgs) {
         CommitManager commitManager = callCommitManager();
         Commit head = commitManager.getHeadCommit();
         FileManager fileManager = callFileManager();
+
         if (checkoutArgs.length == 1) {
             // checkout [branch name]
-            // Takes all files in the commit at the head of the given branch, and puts them in the working directory,
-            // overwriting the versions of the files that are already there if they exist.
-            // Also, at the end of this command, the given branch will now be considered the current branch (HEAD).
-            // Any files that are tracked in the current branch but are not present in the checked-out branch are deleted.
-            // The staging area is cleared, unless the checked-out branch is the current branch (see Failure cases below).
+            // 切换到指定分支
             String branch = checkoutArgs[0];
             Commit branchCommit = commitManager.getBranchCommit(branch);
 
-            // 如果你输入的分支名在分支列表中找不到，直接报错，不要进行任何操作。
             if (!commitManager.containsBranch(branch)) {
                 throw error("No such branch exists.");
             }
-            // 如果你试图切换到你已经在的分支，没有必要做任何事，直接报错退出。
             if (branch.equals(commitManager.headBranch())) {
                 throw error("No need to checkout the current branch.");
             }
-            // 如果工作目录中有某个文件，它：
-            //	•	没有被当前分支追踪（就是你之前没 add、也没 commit），
-            //	•	但是在目标分支中存在该文件（会被 checkout 覆盖），
-            //→ 这种情况下要报错退出，不能执行 checkout。防止覆盖用户未保存的修改。
             List<String> files = plainFilenamesIn(CWD);
-            for (String fileName: files) {
+            for (String fileName : files) {
                 if (fileManager.isNotTracking(head, fileName) && branchCommit.isTracking(fileName)) {
                     throw error("There is an untracked file in the way; delete it, or add and commit it first.");
                 }
             }
-            // 以上异常检查通过后，从“目标分支的最新 commit”中提取所有文件，把它们放进工作目录（CWD）中，如果工作目录已经存在这些文件，就覆盖它们。
-            // 这个命令执行完后，当前分支（HEAD）会切换成你指定的分支。
-            // 如果有些文件被当前分支追踪、但在目标分支的最新 commit 中没有这些文件，那么这些文件会从工作目录中删除。
-            // 切换分支时 staging 区会被清空（除非你 checkout 的正好是当前分支）。
-            Map<String, String> headTrackingFiles = head.getTrackedFile();
-            for (String fileName: headTrackingFiles.keySet()) {
-                if (head.isTracking(fileName) && !branchCommit.isTracking(fileName)) {
-//                    deleteFileFrom(CWD, fileName);
+            for (String fileName : head.getTrackedFile().keySet()) {
+                if (!branchCommit.isTracking(fileName)) {
                     restrictedDelete(join(CWD, fileName));
                 }
             }
             FileManager.checkout(branchCommit);
             commitManager.changeHeadTo(branch);
             fileManager.clearStageArea();
-        }
-        else {
+
+        } else {
+            // 文件版本恢复
             String fileName;
             Commit commit;
+            // checkout -- [file name]
             if (checkoutArgs.length == 2) {
-                // checkout -- [file name]
-                // Takes the version of the file as it exists in the head commit and puts it in the working directory,
-                // overwriting the version of the file that’s already there if there is one.
-                // The new version of the file is not staged.
                 fileName = checkoutArgs[1];
                 commit = head;
             } else {
-                // checkout [commit id] -- [file name]
-                // Takes the version of the file as it exists in the commit with the given id,
-                // and puts it in the working directory,
-                // overwriting the version of the file that’s already there if there is one.
-                // The new version of the file is not staged.
+                // checkout [file name] -- [file name]
                 fileName = checkoutArgs[2];
                 commit = commitManager.getCommit(checkoutArgs[0]);
                 if (commit == null) throw error("No commit with that id exists.");
@@ -269,11 +291,16 @@ public class Repository {
             if (!commit.isTracking(fileName)) throw error("File does not exist in that commit.");
             FileManager.checkout(commit, fileName);
         }
+
         commitManager.save();
         fileManager.save();
     }
 
-    /* 新建名为 branch 的分支 */
+    /**
+     * 新建分支。
+     *
+     * @param branch 分支名称
+     */
     public static void branch(String branch) {
         CommitManager manager = callCommitManager();
         boolean created =  manager.createNewBranch(branch);
@@ -284,7 +311,11 @@ public class Repository {
         }
     }
 
-    /* 删除名为 branch 的分支 */
+    /**
+     * 删除分支。
+     *
+     * @param branch 分支名称
+     */
     public static void rmBranch(String branch) {
         CommitManager commitManager = callCommitManager();
         if (branch.equals(commitManager.headBranch())) {
@@ -297,7 +328,9 @@ public class Repository {
         commitManager.save();
     }
 
-    /* 打印当前 gitlet 目前正在管理的所有文件的状态 */
+    /**
+     * 展示当前所有状态，包括分支、暂存区、未追踪文件等。
+     */
     public static void status() {
         FileManager fileManager = callFileManager();
         CommitManager commitManager = callCommitManager();
@@ -375,8 +408,11 @@ public class Repository {
         }
     }
 
-    /* 选择特定 commit，将当前工作区全部内容恢复成该 commit 追踪的状态，重新设置该 commit 为 HEAD。
-    *  创建 commit 追踪但 CWD 不存在的新文件，覆盖同名文件，删除 commit 没有追踪但 CWD 存在的文件。*/
+    /**
+     * 切换 HEAD 指向指定提交，并还原工作目录至该提交的状态。
+     *
+     * @param commitId 提交 ID
+     */
     public static void reset(String commitId) {
         CommitManager commitManager = callCommitManager();
         Commit commit = commitManager.getCommit(commitId);
@@ -402,7 +438,11 @@ public class Repository {
     }
 
 
-    /* 1  */
+    /**
+     * 合并指定分支到当前分支，并处理冲突与合并提交。
+     *
+     * @param branch 分支名称
+     */
     public static void merge(String branch) {
         // 如果当前暂存区非空，报错 "You have uncommitted changes."
         // 如果分支 branch 不存在，报错 "A branch with that name does not exist."
@@ -435,21 +475,32 @@ public class Repository {
             message("Current branch fast-forwarded.");
         } else if (splitPoint.id().equals(bId)) {
             message("Given branch is an ancestor of the current branch.");
-        } else {
+        }
+
+        else {
+            // 获取当前工作区中未被追踪的文件列表（用于冲突判断）
             List<String> untrackedFiles = fileManager.getUntrackedFiles(headCommit);
+
+            // 创建合并管理器，传入分裂点、当前提交、目标分支提交、未追踪文件
             MergeManager mergeManager = new MergeManager(splitPoint, headCommit, branchCommit, untrackedFiles);
-            boolean merged =  mergeManager.merge();
+
+            // 执行合并逻辑，若过程中发现未追踪文件可能被覆盖，则终止合并
+            boolean merged = mergeManager.merge();
             if (!merged) {
                 throw error("There is an untracked file in the way; delete it, or add and commit it first.");
             }
-            // 操作工作区文件，进行各种暂存逻辑操作
+
+            // 应用合并结果：处理冲突、删除冲突文件、还原合并结果文件
             mergeManager.handleConflict();
             mergeManager.doRemove();
             mergeManager.doCheckout();
+
+            // 若存在冲突，输出提示信息
             if (mergeManager.encounteredConflict()) {
                 message("Encountered a merge conflict.");
             }
-            // commit
+
+            // 创建合并提交，附加两个父提交
             commit("Merged " + branch + " into " + commitManager.headBranch() + ".", branch);
         }
     }
