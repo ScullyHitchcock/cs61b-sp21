@@ -109,13 +109,13 @@ public class Repository {
         }
         if (headCommit.isTracking(fileName)) {
             fileManager.addToRemoval(fileName);
-            deleteFileFrom(CWD, fileName);
+            restrictedDelete(join(CWD, fileName));
         }
         fileManager.removeFromAddition(fileName);
         fileManager.save();
     }
 
-    public static void commit(String commitMessage) {
+    public static void commit(String commitMessage, String branch) {
 
         FileManager fileManager = callFileManager();
         Map<String, String> addition = fileManager.getAddition();
@@ -130,6 +130,10 @@ public class Repository {
         CommitManager commitManager = callCommitManager();
         Commit headCommit = commitManager.getHeadCommit();
         Commit newCommit = headCommit.childCommit(commitMessage);
+        if (branch != null) {
+            Commit branchCommit = commitManager.getBranchCommit(branch);
+            newCommit.addParent(branchCommit.id());
+        }
         newCommit.updateTrackingFiles(addition, removal);
 
         commitManager.addCommit(newCommit);
@@ -148,10 +152,11 @@ public class Repository {
             // Print current commit details
             printLog(cur);
             // Determine the parent commit
-            String parentId = manager.ParentId(cur.id());
-            if (parentId == null || !manager.containsCommit(parentId)) {
+            List<String> parents = cur.getParentIds();
+            if (parents.isEmpty()) {
                 break;
             }
+            String parentId = cur.getParentIds().get(0);
             cur = manager.getCommit(parentId);
         }
     }
@@ -222,7 +227,7 @@ public class Repository {
             //→ 这种情况下要报错退出，不能执行 checkout。防止覆盖用户未保存的修改。
             List<String> files = plainFilenamesIn(CWD);
             for (String fileName: files) {
-                if (!head.isTracking(fileName) && branchCommit.isTrackingDifferent(fileName)) {
+                if (fileManager.isNotTracking(head, fileName) && branchCommit.isTracking(fileName)) {
                     throw error("There is an untracked file in the way; delete it, or add and commit it first.");
                 }
             }
@@ -233,7 +238,8 @@ public class Repository {
             Map<String, String> headTrackingFiles = head.getTrackedFile();
             for (String fileName: headTrackingFiles.keySet()) {
                 if (head.isTracking(fileName) && !branchCommit.isTracking(fileName)) {
-                    deleteFileFrom(CWD, fileName);
+//                    deleteFileFrom(CWD, fileName);
+                    restrictedDelete(join(CWD, fileName));
                 }
             }
             FileManager.checkout(branchCommit);
@@ -323,48 +329,48 @@ public class Repository {
                                     List<String> modifiedFiles,
                                     List<String> untrackedFiles) {
         // 打印分支信息
-        System.out.println("=== Branches ===");
+        message("=== Branches ===");
         for (String branch : branches) {
             if (branch.equals(headBranch)) {
-                System.out.println("*" + branch); // 当前分支加上 "*" 标识
+                message("*" + branch); // 当前分支加上 "*" 标识
             } else {
-                System.out.println(branch);
+                message(branch);
             }
         }
         System.out.println(); // 空行
 
         // 打印暂存文件信息
-        System.out.println("=== Staged Files ===");
+        message("=== Staged Files ===");
         if (!stagingFiles.isEmpty()) {
             for (String file : stagingFiles) {
-                System.out.println(file);
+                message(file);
             }
         }
         System.out.println(); // 空行
 
         // 打印已移除文件信息
-        System.out.println("=== Removed Files ===");
+        message("=== Removed Files ===");
         if (!removedFiles.isEmpty()) {
             for (String file : removedFiles) {
-                System.out.println(file);
+                message(file);
             }
         }
         System.out.println(); // 空行
 
         // 打印修改未暂存文件信息
-        System.out.println("=== Modifications Not Staged For Commit ===");
+        message("=== Modifications Not Staged For Commit ===");
         if (!modifiedFiles.isEmpty()) {
             for (String file : modifiedFiles) {
-                System.out.println(file);
+                message(file);
             }
         }
         System.out.println(); // 空行
 
         // 打印未追踪文件信息
-        System.out.println("=== Untracked Files ===");
+        message("=== Untracked Files ===");
         if (!untrackedFiles.isEmpty()) {
             for (String file : untrackedFiles) {
-                System.out.println(file);
+                message(file);
             }
         }
     }
@@ -401,5 +407,48 @@ public class Repository {
         // 如果当前暂存区非空，报错 "You have uncommitted changes."
         // 如果分支 branch 不存在，报错 "A branch with that name does not exist."
         // 如果当前分支与 branch 相同，报错 "Cannot merge a branch with itself."
+        FileManager fileManager = callFileManager();
+        CommitManager commitManager = callCommitManager();
+        Map<String, String> addition = fileManager.getAddition();
+        Map<String, String> removal = fileManager.getRemoval();
+        if (!addition.isEmpty() || !removal.isEmpty()) {
+            throw error("You have uncommitted changes.");
+        }
+        if (!commitManager.containsBranch(branch)) {
+            throw error("A branch with that name does not exist.");
+        }
+        if (branch.equals(commitManager.headBranch())) {
+            throw error("Cannot merge a branch with itself.");
+        }
+
+        // 找出两个分支的分裂点 commit。
+        // 如果分裂点与目标分支 branchName 指向的 commit 相同，
+        // 什么都不用做，打印"Given branch is an ancestor of the current branch."直接退出。
+        // 如果分裂点与当前分支 headBranchName 指向的 commit 相同，操作 checkout(branchName)，打印"Current branch fast-forwarded."。
+        Commit headCommit = commitManager.getHeadCommit();
+        Commit branchCommit = commitManager.getBranchCommit(branch);
+        String hId = headCommit.id();
+        String bId = branchCommit.id();
+        Commit splitPoint = commitManager.findSplitPoint(hId, bId);
+        if (splitPoint.id().equals(hId)) {
+            checkout(new String[]{branch});
+            message("Current branch fast-forwarded.");
+        } else if (splitPoint.id().equals(bId)) {
+            message("Given branch is an ancestor of the current branch.");
+        } else {
+            List<String> untrackedFIles = fileManager.getUntrackedFiles(headCommit);
+            MergeManager mergeManager = new MergeManager(splitPoint, headCommit, branchCommit, untrackedFIles);
+            boolean merged =  mergeManager.merge();
+            if (!merged) {
+                throw error("There is an untracked file in the way; delete it, or add and commit it first.");
+            }
+            // 操作工作区文件，进行各种暂存逻辑操作
+            mergeManager.handleConflict();
+            mergeManager.doRemove();
+            mergeManager.doCheckout();
+
+            // commit
+            commit("Merged " + branch + " into " + commitManager.headBranch() + ".", branch);
+        }
     }
 }

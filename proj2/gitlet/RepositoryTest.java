@@ -73,10 +73,8 @@ public class RepositoryTest {
 
         // Step 2: 创建两个文本文件
         File file1 = Utils.join(Repository.CWD, FILE_NAME1);
-        Utils.createFile(file1);
         Utils.writeContents(file1, TEXT1);
         File file2 = Utils.join(Repository.CWD, FILE_NAME2);
-        Utils.createFile(file2);
         Utils.writeContents(file2, TEXT2);
 
         // Step 3: add test1.txt and assert staging and blob count
@@ -90,7 +88,7 @@ public class RepositoryTest {
         assertTrue(staged2.exists(), FILE_NAME2 + "'s blob should be staged for addition");
 
         // Step 5: commit with message and assert commit count
-        Repository.commit(commitMsg);
+        Repository.commit(commitMsg, null);
         assertEquals(
                 2, Objects.requireNonNull(Repository.COMMITS.list()).length,
                 "There should be 2 commits after second commit");
@@ -120,10 +118,9 @@ public class RepositoryTest {
         // 前置步骤
         Repository.setup();
         File file1 = Utils.join(Repository.CWD, FILE_NAME1);
-        Utils.createFile(file1);
         Utils.writeContents(file1, TEXT1);
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commit1");
+        Repository.commit("commit1", null);
 
         // 1 尝试重复操作 add FILE_NAME1，检查 staging 区域，应该什么都没有
         Repository.addFile(FILE_NAME1);
@@ -131,7 +128,7 @@ public class RepositoryTest {
 
         // 2 尝试 commit，应该得到输出 "No changes added to the commit."
         GitletException duplicateCommitException = assertThrows(GitletException.class, () -> {
-            Repository.commit("duplicate commit");
+            Repository.commit("duplicate commit", null);
         });
         assertEquals("No changes added to the commit.", duplicateCommitException.getMessage());
 
@@ -145,15 +142,13 @@ public class RepositoryTest {
         Repository.setup();
         File file1 = Utils.join(Repository.CWD, FILE_NAME1);
         File file2 = Utils.join(Repository.CWD, FILE_NAME2);
-        Utils.createFile(file1);
-        Utils.createFile(file2);
         Utils.writeContents(file1, TEXT1);
         Utils.writeContents(file2, TEXT2);
 
         Repository.addFile(FILE_NAME1);
         File staged1 = new File(Repository.STAGING_BLOBS, HASH1);
         assertTrue(staged1.exists(), FILE_NAME1 + "'s blob should be staged for addition");
-        Repository.commit("commit1");
+        Repository.commit("commit1", null);
 
         // 检查 commit1 追踪 FILE_NAME1
         CommitManager manager1 = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
@@ -170,7 +165,7 @@ public class RepositoryTest {
         File cwdFile1 = Utils.join(Repository.CWD, FILE_NAME1);
         assertFalse(cwdFile1.exists(), "Working directory should not contain " + FILE_NAME1);
 
-        Repository.commit("commit2");
+        Repository.commit("commit2", null);
 
         // commit2 应该没有追踪任何文件
         CommitManager manager2 = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
@@ -192,7 +187,7 @@ public class RepositoryTest {
 
         // commit3: 输出应为 No changes added to the commit.
         GitletException commit3Exception = assertThrows(GitletException.class, () -> {
-            Repository.commit("commit3");
+        Repository.commit("commit3", null);
         });
         assertEquals("No changes added to the commit.", commit3Exception.getMessage());
 
@@ -225,15 +220,15 @@ public class RepositoryTest {
 
         Utils.writeContents(wug, "wug content");
         Repository.addFile("wug.txt");
-        Repository.commit("First commit wug.txt");
+        Repository.commit("First commit wug.txt", null);
 
         Utils.writeContents(notwug, "not wug");
         Repository.addFile("notwug.txt");
-        Repository.commit("First commit notwug.txt");
+        Repository.commit("First commit notwug.txt", null);
 
         Utils.writeContents(wug, "modified wug");
         Repository.addFile("wug.txt");
-        Repository.commit("Modified wug.txt");
+        Repository.commit("Modified wug.txt", null);
 
         // 捕获 log 输出
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
@@ -263,22 +258,21 @@ public class RepositoryTest {
     public void testFind() {
         Repository.setup();
         File file = Utils.join(Repository.CWD, FILE_NAME1);
-        Utils.createFile(file);
         Utils.writeContents(file, TEXT1);
 
         // 提交1：Update
         Repository.addFile(FILE_NAME1);
-        Repository.commit("Update");
+        Repository.commit("Update", null);
 
         // 提交2：Fix bug
         Utils.writeContents(file, "new content");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("Fix bug");
+        Repository.commit("Fix bug", null);
 
         // 提交3：Update again
         Utils.writeContents(file, "third content");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("Update");
+        Repository.commit("Update", null);
 
         // 捕获输出
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -321,30 +315,29 @@ public class RepositoryTest {
 
         Repository.setup();
         File file = Utils.join(Repository.CWD, FILE_NAME1);
-        Utils.createFile(file);
 
         // commitA
         Utils.writeContents(file, "A");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commitA");
+        Repository.commit("commitA", null);
 
         // commitB
         Utils.writeContents(file, "B");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commitB");
+        Repository.commit("commitB", null);
 
         // 创建分支并提交 commitC
         Repository.branch("new-branch");
         Repository.checkout(new String[]{"new-branch"});
         Utils.writeContents(file, "C");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commitC");
+        Repository.commit("commitC", null);
 
         // 切换回 main 分支并提交 commitD
         Repository.checkout(new String[]{"main"});
         Utils.writeContents(file, "D");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commitD");
+        Repository.commit("commitD", null);
 
         // 检查 log 输出（当前在 main 分支，应为 D -> B -> A -> initial commit）
         ByteArrayOutputStream logOut = new ByteArrayOutputStream();
@@ -379,17 +372,16 @@ public class RepositoryTest {
 
         Repository.setup();
         File file = Utils.join(Repository.CWD, FILE_NAME1);
-        Utils.createFile(file);
 
         // 初始提交
         Utils.writeContents(file, "A");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commitA");
+        Repository.commit("commitA", null);
 
         // 修改并提交 commitB
         Utils.writeContents(file, "B");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commitB");
+        Repository.commit("commitB", null);
 
         // 创建新分支并切换
         Repository.branch("dev");
@@ -398,7 +390,7 @@ public class RepositoryTest {
         // dev 分支上提交 commitC
         Utils.writeContents(file, "C");
         Repository.addFile(FILE_NAME1);
-        Repository.commit("commitC");
+        Repository.commit("commitC", null);
 
         // 检查切换回 main，文件应为 B 内容
         Repository.checkout(new String[]{"main"});
@@ -440,10 +432,9 @@ public class RepositoryTest {
         assertEquals("No commit with that id exists.", noCommitEx.getMessage());
 
         // checkout 存在的 commit，但文件不在其中
-        Utils.createFile(Utils.join(Repository.CWD, FILE_NAME2));
         Utils.writeContents(Utils.join(Repository.CWD, FILE_NAME2), TEXT2);
         Repository.addFile(FILE_NAME2);
-        Repository.commit("commit with file2");
+        Repository.commit("commit with file2", null);
 
         GitletException missingFileEx = assertThrows(GitletException.class, () -> {
             Repository.checkout(new String[]{commitB.id(), "--", FILE_NAME2});
@@ -452,13 +443,52 @@ public class RepositoryTest {
     }
 
     @Test
+    public void testCheckout1() {
+        Repository.setup();
+
+        // 创建文件 A，写入内容并提交
+        File fileA = Utils.join(Repository.CWD, FILE_NAME1);
+        Utils.writeContents(fileA, TEXT1);
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commit A", null);
+
+        // 创建新分支并切换到该分支
+        Repository.branch("new-branch");
+        Repository.checkout(new String[]{"new-branch"});
+
+        // 删除文件 A 并提交
+        Repository.remove(FILE_NAME1);
+        Repository.commit("remove A", null);
+
+        // 手动创建一个未追踪的文件 A（与 main 分支的版本冲突）
+        Utils.writeContents(fileA, "untracked content");
+
+        // 尝试切换回 main 分支，应抛出异常
+        GitletException ex = assertThrows(GitletException.class, () -> {
+            Repository.checkout(new String[]{"main"});
+        });
+        assertEquals("There is an untracked file in the way; delete it, or add and commit it first.", ex.getMessage());
+
+        // add A
+        Repository.addFile(FILE_NAME1);
+        // 提交
+        Repository.commit("commit again A", null);
+        // remove A，立即手动创建 A
+        Repository.remove(FILE_NAME1);
+        Utils.writeContents(fileA, "conflicting untracked");
+        // checkout main, 预期一样的报错
+        GitletException ex2 = assertThrows(GitletException.class, () -> {
+            Repository.checkout(new String[]{"main"});
+        });
+        assertEquals("There is an untracked file in the way; delete it, or add and commit it first.", ex2.getMessage());
+    }
+
+    @Test
     public void testFileStatus1() throws IOException {
         Repository.setup();
 
         File file1 = Utils.join(Repository.CWD, FILE_NAME1);
         File file2 = Utils.join(Repository.CWD, FILE_NAME2);
-        Utils.createFile(file1);
-        Utils.createFile(file2);
         Utils.writeContents(file1, TEXT1);
         Utils.writeContents(file2, TEXT2);
 
@@ -466,7 +496,7 @@ public class RepositoryTest {
         Repository.addFile(FILE_NAME1);
 
         // 提交 file1
-        Repository.commit("Commit file1");
+        Repository.commit("Commit file1", null);
 
         // 修改 file1 内容（已追踪但未暂存的修改）
         Utils.writeContents(file1, "Modified content");
@@ -477,7 +507,6 @@ public class RepositoryTest {
         // 创建一个未追踪的新文件 file3
         String fileName3 = "file3.txt";
         File file3 = Utils.join(Repository.CWD, fileName3);
-        Utils.createFile(file3);
         Utils.writeContents(file3, "new file");
 
         // 捕获 status 输出
@@ -525,12 +554,11 @@ public class RepositoryTest {
         String[] files = {"file1.txt", "file2.txt", "file3.txt", "file4.txt", "file5.txt"};
         for (String f : files) {
             File file = Utils.join(Repository.CWD, f);
-            Utils.createFile(file);
             Utils.writeContents(file, "original " + f);
             Repository.addFile(f);
         }
 
-        Repository.commit("commit file1~5");
+        Repository.commit("commit file1~5", null);
 
         // 创建新分支并切换
         Repository.branch("dev");
@@ -542,7 +570,6 @@ public class RepositoryTest {
         // remove file2，然后重新创建 file2（模拟 untracked）
         Repository.remove("file2.txt");
         File file2 = Utils.join(Repository.CWD, "file2.txt");
-        Utils.createFile(file2);
         Utils.writeContents(file2, "original file2");
 
         // 修改 file3
@@ -555,20 +582,17 @@ public class RepositoryTest {
 
         // 创建并 add file6
         File file6 = Utils.join(Repository.CWD, "file6.txt");
-        Utils.createFile(file6);
         Utils.writeContents(file6, "content6");
         Repository.addFile("file6.txt");
 
         // 创建并 add file7，然后删除 file7
         File file7 = Utils.join(Repository.CWD, "file7.txt");
-        Utils.createFile(file7);
         Utils.writeContents(file7, "content7");
         Repository.addFile("file7.txt");
         file7.delete();
 
         // 创建 file8（untracked）
         File file8 = Utils.join(Repository.CWD, "file8.txt");
-        Utils.createFile(file8);
         Utils.writeContents(file8, "file8 content");
 
         // 捕获 status 输出
@@ -615,7 +639,7 @@ public class RepositoryTest {
         Repository.addFile(fileA);
         Repository.addFile(fileB);
         Repository.addFile(fileC);
-        Repository.commit("commit ABC");
+        Repository.commit("commit ABC", null);
 
         CommitManager manager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
         String commitA = manager.getHeadCommit().id();
@@ -637,7 +661,7 @@ public class RepositoryTest {
         Repository.addFile(fileB);
         Repository.addFile(fileC);
         Repository.addFile(fileD);
-        Repository.commit("modify BC and add D");
+        Repository.commit("modify BC and add D", null);
 
         // reset 到 commitA
         Repository.reset(commitA);
@@ -660,5 +684,63 @@ public class RepositoryTest {
         // 断言：HEAD commit id 等于 commitA
         CommitManager afterResetManager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
         assertEquals(commitA, afterResetManager.getHeadCommit().id(), "HEAD should point to original commit A");
+    }
+
+    @Test
+    public void splitPointTest() {
+        // 提交2次 A 和 B
+        Repository.setup();
+        File file = Utils.join(Repository.CWD, FILE_NAME1);
+
+        Utils.writeContents(file, "A");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitA", null);
+
+        Utils.writeContents(file, "B");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitB", null);
+
+        // 创建分支 b1，checkout b1
+        Repository.branch("b1");
+        Repository.checkout(new String[]{"b1"});
+
+        // 提交1次 C
+        Utils.writeContents(file, "C");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitC", null);
+
+        // checkout main
+        Repository.checkout(new String[]{"main"});
+
+        // 提交1次 D
+        Utils.writeContents(file, "D");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitD", null);
+
+        // 创建分支 b2，checkout b2
+        Repository.branch("b2");
+        Repository.checkout(new String[]{"b2"});
+
+        // 提交1次 E
+        Utils.writeContents(file, "E");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitE", null);
+
+        // checkout main
+        Repository.checkout(new String[]{"main"});
+
+        // 提交1次 F
+        Utils.writeContents(file, "F");
+        Repository.addFile(FILE_NAME1);
+        Repository.commit("commitF", null);
+
+        // 获取 b1 和 b2 的 HEAD commit
+        CommitManager manager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
+        String b1Head = manager.getBranchCommit("b1").id();
+        String b2Head = manager.getBranchCommit("b2").id();
+
+        Commit splitPoint = manager.findSplitPoint(b1Head, b2Head);
+
+        assertEquals("commitB", splitPoint.getMessage(), "Split point should be commitB");
     }
 }

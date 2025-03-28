@@ -51,9 +51,6 @@ public class FileManager implements Serializable {
 
     /* 保存文件管理器 */
     public void save() {
-        if (!Repository.FILE_MANAGER.exists()) {
-            Utils.createFile(Repository.FILE_MANAGER);
-        }
         Utils.writeObject(Repository.FILE_MANAGER, this);
     }
 
@@ -72,7 +69,8 @@ public class FileManager implements Serializable {
         String content = Utils.readContentsAsString(Utils.join(Repository.CWD, fileName));
         String fileHash = Utils.sha1(fileName, content);
         addition.put(fileName, fileHash);
-        Utils.createOrOverride(Repository.STAGING_BLOBS, fileHash, content);
+//        Utils.createOrOverride(Repository.STAGING_BLOBS, fileHash, content);
+        Utils.writeContents(Utils.join(Repository.STAGING_BLOBS, fileHash), content);
     }
 
     /* 将文件 fileName 从 addition 中移除（无论在不在）*/
@@ -85,7 +83,8 @@ public class FileManager implements Serializable {
         String content = Utils.readContentsAsString(Utils.join(Repository.CWD, fileName));
         String fileHash = Utils.sha1(fileName, content);
         removal.put(fileName, fileHash);
-        Utils.createOrOverride(Repository.STAGING_BLOBS, fileHash, content);
+//        Utils.createOrOverride(Repository.STAGING_BLOBS, fileHash, content);
+        Utils.writeContents(Utils.join(Repository.STAGING_BLOBS, fileHash), content);
     }
     /* 将文件 fileName 从 removal 中移除（无论在不在） */
     public void removeFromRemoval(String fileName) {
@@ -136,7 +135,7 @@ public class FileManager implements Serializable {
      * 如果 fileName 在 CWD 中，且
      * 1 fileName 不被 commit 追踪，且不在 addition 中，返回 true
      * 2 fileName 在 removal 中，返回 true */
-    public boolean isNotTracking(Commit commit, String fileName) {
+    public  boolean isNotTracking(Commit commit, String fileName) {
         if (!isInCWD(fileName)) return false;
         return (!commit.isTracking(fileName) && !isStagingInAdd(fileName))
             || (isStagingInRm(fileName));
@@ -164,7 +163,8 @@ public class FileManager implements Serializable {
     static void checkout(Commit commit, String fileName) {
         String fileHash = commit.getTrackedFile().get(fileName);
         String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOBS, fileHash));
-        Utils.createOrOverride(Repository.CWD, fileName, blobContent);
+//        Utils.createOrOverride(Repository.CWD, fileName, blobContent);
+        Utils.writeContents(Utils.join(Repository.CWD, fileName), blobContent);
     }
 
     /**

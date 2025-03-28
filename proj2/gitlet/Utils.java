@@ -306,14 +306,6 @@ class Utils {
         System.out.println();
     }
 
-    static void createFile(File file) {
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            throw error("创建文件时发生错误：%s", e.getMessage());
-        }
-    }
-
     static void clean(File dir) {
         List<String> files = plainFilenamesIn(dir);
         if (files != null) {
@@ -328,21 +320,5 @@ class Utils {
         if (!file.exists()) return null;
         String content = readContentsAsString(file);
         return sha1(fileName, content);
-    }
-
-    /* 在文件夹 dir 中创建文件 fileName，写入内容 content，如果文件已存在，则覆盖原内容 */
-    static void createOrOverride(File dir, String fileName, String newContent) {
-        File file = join(dir, fileName);
-        if (!plainFilenamesIn(dir).contains(fileName)) {
-            createFile(file);
-        }
-        writeContents(file, newContent);
-    }
-
-    /* 在文件夹 dir 中删除文件 fileName */
-    static void deleteFileFrom(File dir, String fileName) {
-        if (join(dir, fileName).exists()) {
-            join(dir, fileName).delete();
-        }
     }
 }

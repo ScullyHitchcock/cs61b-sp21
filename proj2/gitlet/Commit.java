@@ -43,12 +43,12 @@ public class Commit implements Serializable, Dumpable {
         ArrayList<String> newParents = new ArrayList<>();
         TreeMap<String, String> newTrackedFiles = new TreeMap<>(this.trackedFile);
         Commit child = new Commit(msg, Instant.now(), newParents, newTrackedFiles);
-        child.setParent(this.commitId);
+        child.addParent(this.commitId);
         return child;
     }
 
     /* 传入指定的提交 id，将其视为 this 对象的父提交 */
-    public void setParent(String id) {
+    public void addParent(String id) {
         parentCommits.add(id);
     }
 
@@ -100,7 +100,6 @@ public class Commit implements Serializable, Dumpable {
         String content = Utils.readContentsAsString(oldFile);
         File newFile = Utils.join(Repository.BLOBS, fileHash);
         if (!newFile.exists()) {
-            Utils.createFile(newFile);
             Utils.writeContents(newFile, content);
         }
     }
@@ -132,7 +131,6 @@ public class Commit implements Serializable, Dumpable {
     public String save() {
         commitId = createId();
         File f = Utils.join(Repository.COMMITS, commitId);
-        Utils.createFile(f);
         Utils.writeObject(f, this);
         return commitId;
     }
@@ -145,8 +143,7 @@ public class Commit implements Serializable, Dumpable {
     }
 
     /* 传入另一个 Commit 对象 otherCommit，合并后返回新 Commit 对象 */
-    public Commit merge(Commit otherCommit) {
-
+    public Commit mergeCommit(Commit otherCommit) {
         return null;
     }
 

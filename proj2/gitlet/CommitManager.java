@@ -33,9 +33,6 @@ public class CommitManager implements Serializable {
 
     /* 将 manager 保存到 Repository.COMMIT_MANAGER 路径中 */
     public void save() {
-        if (!Repository.COMMIT_MANAGER.exists()) {
-            Utils.createFile(Repository.COMMIT_MANAGER);
-        }
         Utils.writeObject(Repository.COMMIT_MANAGER, this);
     }
 
@@ -99,12 +96,12 @@ public class CommitManager implements Serializable {
     }
 
     /* 根据当前 commit id 返回其第一个父 commit id，如果 id 不存在或没有父 commit，返回 null */
-    public String ParentId(String id) {
+    public List<String> getParentIds(String id) {
         if (!commits.containsKey(id)) return null;
         Commit commit = getCommit(id);
         List<String> parents = commit.getParentIds();
         if (parents.isEmpty()) return null;
-        return commit.getParentIds().get(0);
+        return commit.getParentIds();
     }
 
     /* 添加一个 Commit 对象到 manager 中 */
@@ -143,32 +140,6 @@ public class CommitManager implements Serializable {
         return false;
     }
 
-    /* 将指定分支的 Commit 合并到当前活跃分支上
-    *  1 找出两个分支的分裂点 commit。
-    *    a 如果分裂点与目标分支 branchName 指向的 commit 相同，
-    *      什么都不用做，打印"Given branch is an ancestor of the current branch."直接退出。
-    *    b 如果分裂点与当前分支 headBranchName 指向的 commit 相同，操作 checkout(branchName)，打印"Current branch fast-forwarded."。
-    *  2 如果分裂点不是上述两种情况，对于每一个文件：
-    *    a 如果某个文件 fileName 在“给定分支” givenBranch（被 merge 进来的分支）的内容和分裂点的版本不同，
-    *      但在“当前分支” currentBranch（执行 merge 的分支）中的内容与分裂点一致，
-    *      则 checkout(givenBranch.commit, fileName) -> addFile(fileName)。
-    *    b 如果反过来，currentBranch 与分裂点不同，givenBranch 与分裂点相同，则什么都不用做。
-    *    c 如果给定分支与当前分支的特定文件的修改方式完全一致（fileHash 相同），或以不再追踪，则什么都不用做。
-    *    d 如果给定分支与当前分支两者都追踪了分裂点没有的新文件，则什么都不用做。
-    *    e 如果给定分支出现了分裂点没有的新文件，而当前分支没有出现，则 checkout(givenBranch.commit, fileName) -> addFile(fileName)。
-    *    f 如果给定分支删除了分裂点有的文件，而当前分支没有删除，则 remove(fileName)。
-    *    g 如果当前分支删除了分裂点有的文件，而给定分支没有删除，则什么都不用做。
-    *    h 如果文件在当前分支和给定分支都被改动了，但改法不同，则产生冲突：
-    *      a 两边都修改了，但结果不同；
-    *      b 一边改了内容，一边删掉了；
-    *      c 文件原来 split point 没有，但两边新增了不同版本。
-    * 3 处理冲突，将文件的内容覆盖为以下格式：
-    *   <<<<<<< HEAD
-    *   contents of file in current branch
-    *   =======
-    *   contents of file in given branch
-    *   >>>>>>>
-    * */
     public void merge(String branchName) {
         if (branchs.containsKey(branchName)) {
             String headCommitHash = branchs.get(headBranchName);
@@ -176,7 +147,7 @@ public class CommitManager implements Serializable {
 
             Commit headCommit = getCommit(headCommitHash);
             Commit branchCommit = getCommit(branchCommitHash);
-            Commit newCommit = headCommit.merge(branchCommit);
+            Commit newCommit = headCommit.mergeCommit(branchCommit);
 
             addCommit(newCommit);
         }
@@ -192,5 +163,52 @@ public class CommitManager implements Serializable {
             }
         }
         return res;
+    }
+
+    /* 传入两个 commitId，返回他们之间的最近共同祖先 Commit*/
+    public Commit findSplitPoint(String commitId1, String commitId2) {
+        // 先获得 commitId1 的所有祖先
+        Set<String> ancestors = getAllAncestors(commitId1);
+        // 从 commitId2 向上遍历查找第一个出现在 ancestors 中的 commit
+        Queue<String> queue = new LinkedList<>();
+        queue.add(commitId2);
+        Set<String> visited = new HashSet<>();
+        while (!queue.isEmpty()) {
+            String currentId = queue.poll();
+            if (ancestors.contains(currentId)) {
+                return getCommit(currentId);
+            }
+            visited.add(currentId);
+            List<String> parentIds = getParentIds(currentId);
+            if (parentIds != null && !parentIds.isEmpty()) {
+                for (String parentId : parentIds) {
+                    if (!visited.contains(parentId)) {
+                        queue.add(parentId);
+                    }
+                }
+            }
+        }
+        return null;  // 理论上不可能没有公共祖先
+    }
+    /* 传入 commitId，返回它的所有祖先的 id */
+    private Set<String> getAllAncestors(String commitId) {
+        Set<String> ancestors = new HashSet<>();
+        Queue<String> queue = new LinkedList<>();
+        // 初始在队列加入元素自身
+        queue.add(commitId);
+        while (!queue.isEmpty()) {
+            String currentId = queue.poll();
+            ancestors.add(currentId);
+            List<String> parentIds = getParentIds(currentId);
+            // 遍历找出 current 的父 commit id，
+            if (parentIds != null && !parentIds.isEmpty()) {
+                for (String parentId : parentIds) {
+                    if (!ancestors.contains(parentId)) {
+                        queue.add(parentId);
+                    }
+                }
+            }
+        }
+        return ancestors;
     }
 }
