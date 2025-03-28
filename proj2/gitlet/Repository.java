@@ -436,8 +436,8 @@ public class Repository {
         } else if (splitPoint.id().equals(bId)) {
             message("Given branch is an ancestor of the current branch.");
         } else {
-            List<String> untrackedFIles = fileManager.getUntrackedFiles(headCommit);
-            MergeManager mergeManager = new MergeManager(splitPoint, headCommit, branchCommit, untrackedFIles);
+            List<String> untrackedFiles = fileManager.getUntrackedFiles(headCommit);
+            MergeManager mergeManager = new MergeManager(splitPoint, headCommit, branchCommit, untrackedFiles);
             boolean merged =  mergeManager.merge();
             if (!merged) {
                 throw error("There is an untracked file in the way; delete it, or add and commit it first.");
@@ -446,7 +446,9 @@ public class Repository {
             mergeManager.handleConflict();
             mergeManager.doRemove();
             mergeManager.doCheckout();
-
+            if (mergeManager.encounteredConflict()) {
+                message("Encountered a merge conflict.");
+            }
             // commit
             commit("Merged " + branch + " into " + commitManager.headBranch() + ".", branch);
         }

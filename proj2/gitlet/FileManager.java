@@ -163,7 +163,6 @@ public class FileManager implements Serializable {
     static void checkout(Commit commit, String fileName) {
         String fileHash = commit.getTrackedFile().get(fileName);
         String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOBS, fileHash));
-//        Utils.createOrOverride(Repository.CWD, fileName, blobContent);
         Utils.writeContents(Utils.join(Repository.CWD, fileName), blobContent);
     }
 

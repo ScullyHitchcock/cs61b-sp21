@@ -42,7 +42,7 @@ public class MergeManager {
     private Set<String> untrackedFiles;
     private Set<String> checkoutFiles;
     private Set<String> removeFiles;
-    private Set<String> mergeFiles;
+    private Set<String> conflictFiles;
 
     public MergeManager(Commit splitPoint, Commit currentCommit, Commit givenCommit, Collection<String> untrackedFiles) {
         this.splitPoint = splitPoint;
@@ -51,7 +51,7 @@ public class MergeManager {
         this.untrackedFiles = new HashSet<>(untrackedFiles);
         this.checkoutFiles = new HashSet<>();
         this.removeFiles = new HashSet<>();
-        this.mergeFiles = new HashSet<>();
+        this.conflictFiles = new HashSet<>();
     }
 
     /* 获取三个 Commit 对象正在追踪的所有文件集合 */
@@ -92,7 +92,7 @@ public class MergeManager {
             if (untrackedFiles.contains(fileName)) {
                 return false;
             }
-            mergeFiles.add(fileName);
+            conflictFiles.add(fileName);
         }
         return true;
     }
@@ -183,16 +183,42 @@ public class MergeManager {
     public void doCheckout() {
         // 调用 checkoutFiles
         // ...
+        for (String fileName : checkoutFiles) {
+            Repository.checkout(new String[]{givenCommit.id(), "--", fileName});
+            Repository.addFile(fileName);
+        }
     }
 
     public void doRemove() {
         // 调用 removeFiles
         // ...
+        for (String fileName : removeFiles) {
+            Repository.remove(fileName);
+        }
     }
 
     public void handleConflict() {
-        // 调用 mergeFiles
+        // 调用 conflictFiles
         // ...
+        for (String fileName : conflictFiles) {
+            String curHash = currentCommit.getTrackedFile().get(fileName);
+            String givHash = givenCommit.getTrackedFile().get(fileName);
+            String curContents = (curHash == null) ? null : Utils.readContentsAsString(Utils.join(Repository.BLOBS, curHash));
+            String givContents = (givHash == null) ? null : Utils.readContentsAsString(Utils.join(Repository.BLOBS, givHash));
+
+            String mergedContents = "<<<<<<< HEAD\n"
+                    + (curContents == null ? "" : curContents)
+                    + "=======\n"
+                    + (givContents == null ? "" : givContents)
+                    + ">>>>>>>\n";
+            Utils.writeContents(Utils.join(Repository.CWD, fileName), mergedContents);
+
+            Repository.addFile(fileName);
+        }
+    }
+
+    public boolean encounteredConflict() {
+        return !conflictFiles.isEmpty();
     }
 
 }

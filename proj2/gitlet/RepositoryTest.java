@@ -743,4 +743,46 @@ public class RepositoryTest {
 
         assertEquals("commitB", splitPoint.getMessage(), "Split point should be commitB");
     }
+
+    @Test
+    public void mergeTest() throws IOException {
+        Repository.setup();
+        File file = Utils.join(Repository.CWD, "test.txt");
+
+        // Step 1: initial commit
+        Utils.writeContents(file, "base");
+        Repository.addFile("test.txt");
+        Repository.commit("base", null);
+
+        // Step 2: create and switch to 'dev' branch
+        Repository.branch("dev");
+        Repository.checkout(new String[]{"dev"});
+
+        // Step 3: dev modifies test.txt and commits
+        Utils.writeContents(file, "dev version");
+        Repository.addFile("test.txt");
+        Repository.commit("dev commit", null);
+
+        // Step 4: switch back to main
+        Repository.checkout(new String[]{"main"});
+
+        // Step 5: main modifies test.txt and commits
+        Utils.writeContents(file, "main version");
+        Repository.addFile("test.txt");
+        Repository.commit("main commit", null);
+
+        // Step 6: perform merge with dev
+        Repository.merge("dev");
+
+        // Step 7: check conflict content in working directory
+        String mergedContent = Utils.readContentsAsString(file);
+        assertTrue(mergedContent.contains("<<<<<<< HEAD"), "Merged file should contain HEAD marker");
+        assertTrue(mergedContent.contains("======="), "Merged file should contain divider");
+        assertTrue(mergedContent.contains(">>>>>>>"), "Merged file should contain branch marker");
+
+        // Step 8: verify merge commit has two parents
+        CommitManager manager = Utils.readObject(Repository.COMMIT_MANAGER, CommitManager.class);
+        Commit head = manager.getHeadCommit();
+        assertEquals(2, head.getParentIds().size(), "Merge commit should have two parents");
+    }
 }
