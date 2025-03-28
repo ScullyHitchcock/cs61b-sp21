@@ -25,7 +25,7 @@ public class CommitManager implements Serializable {
     public CommitManager() {
         commits = new HashMap<>();
         branches = new HashMap<>();
-        headBranchName = "main";
+        headBranchName = "master";
         Commit initCommit = Commit.createInitCommit();
         addCommit(initCommit);
     }

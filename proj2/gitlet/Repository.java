@@ -147,6 +147,10 @@ public class Repository {
         Map<String, String> addition = fileManager.getAddition();
         Map<String, String> removal = fileManager.getRemoval();
 
+        if (commitMessage == null || commitMessage.isEmpty()) {
+            throw error("Please enter a commit message.");
+        }
+
         // 如果 addition 和 removal 都是空的，直接报错
         if (addition.isEmpty() && removal.isEmpty()) {
             throw error("No changes added to the commit.");
