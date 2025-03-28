@@ -17,29 +17,29 @@ import static gitlet.Utils.*;
 public class Repository {
 
     /** The current working directory. */
-    public static final File CWD = new File(System.getProperty("user.dir"));
+    public static File CWD = new File(System.getProperty("user.dir"));
         /** .gitlet 结构 */
-        public static final File GITLET_DIR = join(CWD, ".gitlet");
+        public static File GITLET_DIR = join(CWD, ".gitlet");
             /** 暂存文件快照 */
-            public static final File STAGING_BLOBS = join(GITLET_DIR, "staging");
+            public static File STAGING_BLOBS = join(GITLET_DIR, "staging");
             /** 永久文件快照 */
-            public static final File BLOBS = join(GITLET_DIR, "blobs");
+            public static File BLOBS = join(GITLET_DIR, "blobs");
             /** commit 对象 */
-            public static final File COMMITS = join(GITLET_DIR, "commits");
+            public static File COMMITS = join(GITLET_DIR, "commits");
             /** commit管理器和文件管理器 */
-            public static final File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
-            public static final File FILE_MANAGER = join(GITLET_DIR, "fileManager");
+            public static File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
+            public static File FILE_MANAGER = join(GITLET_DIR, "fileManager");
 
-//    /** 仅供测试用 */
-//    public static void refreshCWDForUnitTest() {
-//        CWD = new File(System.getProperty("user.dir"));
-//        GITLET_DIR = join(CWD, ".gitlet");
-//        STAGING_BLOBS = join(GITLET_DIR, "staging");
-//        BLOBS = join(GITLET_DIR, "blobs");
-//        COMMITS = join(GITLET_DIR, "commits");
-//        COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
-//        FILE_MANAGER = join(GITLET_DIR, "fileManager");
-//    }
+    /** 仅供测试用 */
+    public static void refreshCWDForUnitTest() {
+        CWD = new File(System.getProperty("user.dir"));
+        GITLET_DIR = join(CWD, ".gitlet");
+        STAGING_BLOBS = join(GITLET_DIR, "staging");
+        BLOBS = join(GITLET_DIR, "blobs");
+        COMMITS = join(GITLET_DIR, "commits");
+        COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
+        FILE_MANAGER = join(GITLET_DIR, "fileManager");
+    }
 
     /**
      * 初始化版本库目录和初始提交。
@@ -125,7 +125,9 @@ public class Repository {
         FileManager fileManager = callFileManager();
 
         if ((!fileManager.isInCWD(fileName)) || (fileManager.isNotTracking(headCommit, fileName))) {
-            throw error("No reason to remove the file.");
+            if (!fileManager.hasDeleted(headCommit, fileName)) {
+                throw error("No reason to remove the file.");
+            }
         }
         if (headCommit.isTracking(fileName)) {
             fileManager.addToRemoval(fileName);
