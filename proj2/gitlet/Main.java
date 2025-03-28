@@ -12,69 +12,74 @@ public class Main {
      */
     public static void main(String[] args) {
         // TODO: what if args is empty?
-        if (args.length == 0) {
-            throw Utils.error("Must have at least one argument.");
-        }
-        String firstArg = args[0];
-        switch(firstArg) {
-            case "init":
-                validateNumArgs(args, 1, 1);
-                Repository.setup();
-                break;
-            case "add":
-                validateNumArgs(args, 2, 2);
-                Repository.addFile(args[1]);
-                break;
-            case "commit":
-                validateNumArgs(args, 2, 2);
-                Repository.commit(args[1], null);
-                break;
-            case "rm":
-                validateNumArgs(args, 2, 2);
-                Repository.remove(args[1]);
-                break;
-            case "log":
-                validateNumArgs(args, 1, 1);
-                Repository.log();
-                break;
-            case "global-log":
-                validateNumArgs(args, 1, 1);
-                Repository.globalLog();
-                break;
-            case "find":
-                validateNumArgs(args, 2, 2);
-                Repository.find(args[1]);
-                break;
-            case "status":
-                validateNumArgs(args, 1, 1);
-                Repository.status();
-                break;
-            case "checkout":
-                validateNumArgs(args, 2, 4);
-                if (args.length > 2 && !Arrays.asList(args).contains("--")) {
-                    throw Utils.error("Incorrect operands.");
-                }
-                String[] checkoutArgs = Arrays.copyOfRange(args, 1, args.length);
-                Repository.checkout(checkoutArgs);
-                break;
-            case "branch":
-                validateNumArgs(args, 2, 2);
-                Repository.branch(args[1]);
-                break;
-            case "rm-branch":
-                validateNumArgs(args, 2, 2);
-                Repository.rmBranch(args[1]);
-                break;
-            case "reset":
-                validateNumArgs(args, 2, 2);
-                Repository.reset(args[1]);
-                break;
-            case "merge":
-                validateNumArgs(args, 2, 2);
-                Repository.merge(args[1]);
-                break;
-            default:
-                throw Utils.error("Unknown command: %s", args[0]);
+        try {
+            if (args.length == 0) {
+                throw Utils.error("Please enter a command.");
+            }
+            String firstArg = args[0];
+            switch(firstArg) {
+                case "init":
+                    validateNumArgs(args, 1, 1);
+                    Repository.setup();
+                    break;
+                case "add":
+                    validateNumArgs(args, 2, 2);
+                    Repository.addFile(args[1]);
+                    break;
+                case "commit":
+                    validateNumArgs(args, 2, 2);
+                    Repository.commit(args[1], null);
+                    break;
+                case "rm":
+                    validateNumArgs(args, 2, 2);
+                    Repository.remove(args[1]);
+                    break;
+                case "log":
+                    validateNumArgs(args, 1, 1);
+                    Repository.log();
+                    break;
+                case "global-log":
+                    validateNumArgs(args, 1, 1);
+                    Repository.globalLog();
+                    break;
+                case "find":
+                    validateNumArgs(args, 2, 2);
+                    Repository.find(args[1]);
+                    break;
+                case "status":
+                    validateNumArgs(args, 1, 1);
+                    Repository.status();
+                    break;
+                case "checkout":
+                    validateNumArgs(args, 2, 4);
+                    if (args.length > 2 && !Arrays.asList(args).contains("--")) {
+                        throw Utils.error("Incorrect operands.");
+                    }
+                    String[] checkoutArgs = Arrays.copyOfRange(args, 1, args.length);
+                    Repository.checkout(checkoutArgs);
+                    break;
+                case "branch":
+                    validateNumArgs(args, 2, 2);
+                    Repository.branch(args[1]);
+                    break;
+                case "rm-branch":
+                    validateNumArgs(args, 2, 2);
+                    Repository.rmBranch(args[1]);
+                    break;
+                case "reset":
+                    validateNumArgs(args, 2, 2);
+                    Repository.reset(args[1]);
+                    break;
+                case "merge":
+                    validateNumArgs(args, 2, 2);
+                    Repository.merge(args[1]);
+                    break;
+                default:
+                    throw Utils.error("No command with that name exists.");
+            }
+        } catch (GitletException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
         }
     }
 
