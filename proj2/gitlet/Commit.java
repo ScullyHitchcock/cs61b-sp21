@@ -3,10 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * 表示一次提交快照，记录文件状态和提交元信息。
@@ -103,13 +100,13 @@ public class Commit implements Serializable {
      * @param addition 添加记录
      * @param removal 移除记录
      */
-    public void updateTrackingFiles(Map<String, String> addition, Map<String, String> removal) {
+    public void updateTrackingFiles(Map<String, String> addition, Set<String> removal) {
         for (Map.Entry<String, String> entry: addition.entrySet()) {
             String fileName = entry.getKey();
             String fileHash = entry.getValue();
             trackFile(fileName, fileHash);
         }
-        for (String fileTobeRemoved: removal.keySet()) {
+        for (String fileTobeRemoved: removal) {
             untrackFile(fileTobeRemoved);
         }
     }

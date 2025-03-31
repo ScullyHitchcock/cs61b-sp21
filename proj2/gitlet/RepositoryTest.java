@@ -100,8 +100,8 @@
 //        assertTrue(blob2.exists(), FILE_NAME2 + "'s blob should be saved Permanently");
 //        String content1 = Utils.readContentsAsString(blob1);
 //        String content2 = Utils.readContentsAsString(blob2);
-//        assertEquals(content1, TEXT1, "The content of " + FILE_NAME1 + "'blob should remain unchanged");
-//        assertEquals(content2, TEXT2, "The content of " + FILE_NAME2 + "'blob should remain unchanged");
+//        assertEquals(content1, TEXT1, "The content of " + FILE_NAME1 + "'blob should remaster unchanged");
+//        assertEquals(content2, TEXT2, "The content of " + FILE_NAME2 + "'blob should remaster unchanged");
 //
 //
 //        // Step 6: 检查 HEAD commit 是否追踪两个文件
@@ -158,7 +158,7 @@
 //        Repository.remove(FILE_NAME1);
 //        // FILE_MANAGER 的 removal 应该记录 FILE_NAME1
 //        FileManager fileManager = Utils.readObject(Repository.FILE_MANAGER, FileManager.class);
-//        assertTrue(fileManager.getRemoval().containsKey(FILE_NAME1), "FILE_NAME1 should be marked for removal in FILE_MANAGER");
+//        assertTrue(fileManager.getRemoval().contains(FILE_NAME1), "FILE_NAME1 should be marked for removal in FILE_MANAGER");
 //        // FILE_MANAGER 的 addition 应该不记录 FILE_NAME1
 //        assertFalse(fileManager.getAddition().containsKey(FILE_NAME1), "FILE_NAME1 should not be in addition after removal");
 //        // CWD 应该没有 FILE_NAME1
@@ -180,7 +180,7 @@
 //        Repository.remove(FILE_NAME2);
 //        // REMOVAL 应该没有 FILE_NAME2
 //        fileManager = Utils.readObject(Repository.FILE_MANAGER, FileManager.class);
-//        assertFalse(fileManager.getRemoval().containsKey(FILE_NAME2), "FILE_NAME2 should not be marked for removal after being unstaged");
+//        assertFalse(fileManager.getRemoval().contains(FILE_NAME2), "FILE_NAME2 should not be marked for removal after being unstaged");
 //
 //        // CWD 应该仍然有 FILE_NAME2
 //        assertTrue(Utils.join(Repository.CWD, FILE_NAME2).exists(), "Working directory should still contain " + FILE_NAME2);
@@ -308,7 +308,7 @@
 //        // 进行两次提交，msg 分别为“commitA”和“commitB”
 //        // branch("new branch") 创建新分支
 //        // 提交一次“commitC”
-//        // checkout("main") 切换到原分支 main
+//        // checkout("master") 切换到原分支 master
 //        // 提交一次“commitD”
 //        // log输出，应该得到大概 D -> B -> A -> initial commit 四个提交的输出
 //        // global-log输出，应该得到总共5无序的提交输出
@@ -333,13 +333,13 @@
 //        Repository.addFile(FILE_NAME1);
 //        Repository.commit("commitC", null);
 //
-//        // 切换回 main 分支并提交 commitD
-//        Repository.checkout(new String[]{"main"});
+//        // 切换回 master 分支并提交 commitD
+//        Repository.checkout(new String[]{"master"});
 //        Utils.writeContents(file, "D");
 //        Repository.addFile(FILE_NAME1);
 //        Repository.commit("commitD", null);
 //
-//        // 检查 log 输出（当前在 main 分支，应为 D -> B -> A -> initial commit）
+//        // 检查 log 输出（当前在 master 分支，应为 D -> B -> A -> initial commit）
 //        ByteArrayOutputStream logOut = new ByteArrayOutputStream();
 //        PrintStream originalOut = System.out;
 //        System.setOut(new PrintStream(logOut));
@@ -351,7 +351,7 @@
 //        assertTrue(logOutput.contains("commitB"), "log should include commitB");
 //        assertTrue(logOutput.contains("commitA"), "log should include commitA");
 //        assertTrue(logOutput.contains("initial commit"), "log should include initial commit");
-//        assertFalse(logOutput.contains("commitC"), "log should NOT include commitC on main branch");
+//        assertFalse(logOutput.contains("commitC"), "log should NOT include commitC on master branch");
 //
 //        // 检查 global-log 输出应包含所有5个提交
 //        ByteArrayOutputStream globalLogOut = new ByteArrayOutputStream();
@@ -392,10 +392,10 @@
 //        Repository.addFile(FILE_NAME1);
 //        Repository.commit("commitC", null);
 //
-//        // 检查切换回 main，文件应为 B 内容
-//        Repository.checkout(new String[]{"main"});
+//        // 检查切换回 master，文件应为 B 内容
+//        Repository.checkout(new String[]{"master"});
 //        String content = Utils.readContentsAsString(file);
-//        assertEquals("B", content, "After checking out to main, file content should be 'B'");
+//        assertEquals("B", content, "After checking out to master, file content should be 'B'");
 //
 //        // 再切换回 dev，文件应为 C 内容
 //        Repository.checkout(new String[]{"dev"});
@@ -460,12 +460,12 @@
 //        Repository.remove(FILE_NAME1);
 //        Repository.commit("remove A", null);
 //
-//        // 手动创建一个未追踪的文件 A（与 main 分支的版本冲突）
+//        // 手动创建一个未追踪的文件 A（与 master 分支的版本冲突）
 //        Utils.writeContents(fileA, "untracked content");
 //
-//        // 尝试切换回 main 分支，应抛出异常
+//        // 尝试切换回 master 分支，应抛出异常
 //        GitletException ex = assertThrows(GitletException.class, () -> {
-//            Repository.checkout(new String[]{"main"});
+//            Repository.checkout(new String[]{"master"});
 //        });
 //        assertEquals("There is an untracked file in the way; delete it, or add and commit it first.", ex.getMessage());
 //
@@ -476,9 +476,9 @@
 //        // remove A，立即手动创建 A
 //        Repository.remove(FILE_NAME1);
 //        Utils.writeContents(fileA, "conflicting untracked");
-//        // checkout main, 预期一样的报错
+//        // checkout master, 预期一样的报错
 //        GitletException ex2 = assertThrows(GitletException.class, () -> {
-//            Repository.checkout(new String[]{"main"});
+//            Repository.checkout(new String[]{"master"});
 //        });
 //        assertEquals("There is an untracked file in the way; delete it, or add and commit it first.", ex2.getMessage());
 //    }
@@ -597,7 +597,7 @@
 //
 //        // 捕获 status 输出
 //        // 调用 status 应输出以下信息：
-//        // branches: *新 branch, main
+//        // branches: *新 branch, master
 //        // staged: file6, file7
 //        // removed（按字母顺序排列输出）: file1, file2
 //        // modified（按字母顺序排列输出）: file3 (modified), file4 (deleted), file7 (deleted)
@@ -609,7 +609,7 @@
 //        System.setOut(originalOut);
 //
 //        String statusOut = out.toString();
-//        assertTrue(statusOut.contains("=== Branches ===\n*dev\nmain"), "Branch section should list current branch 'dev' and 'main'");
+//        assertTrue(statusOut.contains("=== Branches ===\n*dev\nmaster"), "Branch section should list current branch 'dev' and 'master'");
 //        assertTrue(statusOut.contains("=== Staged Files ===\nfile6.txt\nfile7.txt"), "file6 and file7 should be listed in staged files");
 //        assertTrue(statusOut.contains("=== Removed Files ===\nfile1.txt\nfile2.txt"), "file1 and file2 should be listed in removed files");
 //        assertTrue(statusOut.contains("=== Modifications Not Staged For Commit ===\nfile3.txt (modified)\nfile4.txt (deleted)\nfile7.txt (deleted)"),
@@ -709,8 +709,8 @@
 //        Repository.addFile(FILE_NAME1);
 //        Repository.commit("commitC", null);
 //
-//        // checkout main
-//        Repository.checkout(new String[]{"main"});
+//        // checkout master
+//        Repository.checkout(new String[]{"master"});
 //
 //        // 提交1次 D
 //        Utils.writeContents(file, "D");
@@ -726,8 +726,8 @@
 //        Repository.addFile(FILE_NAME1);
 //        Repository.commit("commitE", null);
 //
-//        // checkout main
-//        Repository.checkout(new String[]{"main"});
+//        // checkout master
+//        Repository.checkout(new String[]{"master"});
 //
 //        // 提交1次 F
 //        Utils.writeContents(file, "F");
@@ -763,13 +763,13 @@
 //        Repository.addFile("test.txt");
 //        Repository.commit("dev commit", null);
 //
-//        // Step 4: switch back to main
-//        Repository.checkout(new String[]{"main"});
+//        // Step 4: switch back to master
+//        Repository.checkout(new String[]{"master"});
 //
-//        // Step 5: main modifies test.txt and commits
-//        Utils.writeContents(file, "main version");
+//        // Step 5: master modifies test.txt and commits
+//        Utils.writeContents(file, "master version");
 //        Repository.addFile("test.txt");
-//        Repository.commit("main commit", null);
+//        Repository.commit("master commit", null);
 //
 //        // Step 6: perform merge with dev
 //        Repository.merge("dev");

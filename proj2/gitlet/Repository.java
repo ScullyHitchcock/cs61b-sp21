@@ -124,10 +124,8 @@ public class Repository {
         Commit headCommit = callCommitManager().getHeadCommit();
         FileManager fileManager = callFileManager();
 
-        if ((!fileManager.isInCWD(fileName)) || (fileManager.isNotTracking(headCommit, fileName))) {
-            if (!fileManager.hasDeleted(headCommit, fileName)) {
-                throw error("No reason to remove the file.");
-            }
+        if ((!fileManager.isStagingInAdd(fileName)) && (!headCommit.isTracking(fileName))) {
+            throw error("No reason to remove the file.");
         }
         if (headCommit.isTracking(fileName)) {
             fileManager.addToRemoval(fileName);
@@ -147,7 +145,7 @@ public class Repository {
 
         FileManager fileManager = callFileManager();
         Map<String, String> addition = fileManager.getAddition();
-        Map<String, String> removal = fileManager.getRemoval();
+        Set<String> removal = fileManager.getRemoval();
 
         if (commitMessage == null || commitMessage.isEmpty()) {
             throw error("Please enter a commit message.");
@@ -456,7 +454,7 @@ public class Repository {
         FileManager fileManager = callFileManager();
         CommitManager commitManager = callCommitManager();
         Map<String, String> addition = fileManager.getAddition();
-        Map<String, String> removal = fileManager.getRemoval();
+        Set<String> removal = fileManager.getRemoval();
         if (!addition.isEmpty() || !removal.isEmpty()) {
             throw error("You have uncommitted changes.");
         }

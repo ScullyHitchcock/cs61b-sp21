@@ -19,15 +19,15 @@ public class FileManager implements Serializable {
     /* addition 区，以“文件名 -> 文件哈希值”的形式储存特定文件 */
     private Map<String, String> addition;
 
-    /* removal 区，以“文件名 -> 文件哈希值”的形式储存特定文件 */
-    private Map<String, String> removal;
+    /* removal 区，以“文件名”的形式储存特定文件 */
+    private Set<String> removal;
 
     /* 管理区中的所有文件集合，包括工作区的文件和head正在追踪的文件的并集 */
     private Set<String> filesInManagement;
 
     public FileManager() {
         addition = new HashMap<>();
-        removal = new HashMap<>();
+        removal = new HashSet<>();
         filesInManagement = new HashSet<>();
         updateFiles();
     }
@@ -47,7 +47,7 @@ public class FileManager implements Serializable {
             filesInManagement.addAll(workingFiles);
         }
         filesInManagement.addAll(addition.keySet());
-        filesInManagement.addAll(removal.keySet());
+        filesInManagement.addAll(removal);
     }
 
     /**
@@ -71,7 +71,7 @@ public class FileManager implements Serializable {
      *
      * @return removal 区的文件映射
      */
-    public Map<String, String> getRemoval() {
+    public Set<String> getRemoval() {
         return removal;
     }
 
@@ -97,15 +97,12 @@ public class FileManager implements Serializable {
     }
 
     /**
-     * 将文件暂存至 removal，并在 STAGING_BLOBS 中写入文件内容。
+     * 将文件标记为 removal，以准备在下一次 commit 时取消追踪。
      *
      * @param fileName 文件名
      */
     public void addToRemoval(String fileName) {
-        String content = Utils.readContentsAsString(Utils.join(Repository.CWD, fileName));
-        String fileHash = Utils.sha1(fileName, content);
-        removal.put(fileName, fileHash);
-        Utils.writeContents(Utils.join(Repository.STAGING_BLOBS, fileHash), content);
+        removal.add(fileName);
     }
 
     /**
@@ -144,7 +141,7 @@ public class FileManager implements Serializable {
      * @return 是否在 removal 中
      */
     public boolean isStagingInRm(String fileName) {
-        return removal.containsKey(fileName);
+        return removal.contains(fileName);
     }
 
     /**
@@ -205,7 +202,7 @@ public class FileManager implements Serializable {
      */
     public void clearStageArea() {
         addition = new HashMap<>();
-        removal = new HashMap<>();
+        removal = new HashSet<>();
         Utils.clean(Repository.STAGING_BLOBS);
     }
 
