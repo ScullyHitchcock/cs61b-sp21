@@ -216,9 +216,13 @@ public class Repository {
         String formattedTime = formatter.format(time);
         String commitMsg = commit.getMessage();
         String commitId = commit.id();
+        List<String> parents = commit.getParentIds();
 
         message("===");
         message("commit %s", commitId);
+        if (parents.size() == 2) {
+            message("Merge:");
+        }
         message("Date: %s", formattedTime);
         message("%s", commitMsg);
         System.out.println();
@@ -287,7 +291,7 @@ public class Repository {
                 fileName = checkoutArgs[1];
                 commit = head;
             } else {
-                // checkout [file name] -- [file name]
+                // checkout [commit id] -- [file name]
                 fileName = checkoutArgs[2];
                 commit = commitManager.getCommit(checkoutArgs[0]);
                 if (commit == null) throw error("No commit with that id exists.");

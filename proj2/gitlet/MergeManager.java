@@ -150,31 +150,59 @@ public class MergeManager {
         String currentHash = currentCommit.getTrackedFile().get(fileName);
         String givenHash = givenCommit.getTrackedFile().get(fileName);
 
-        int actualF = splitPoint.isTracking(fileName) ? 1 : 0;
+        int actualF = (splitHash == null) ? 0 : 1;
         int actualS;
         int actualT;
 
+//        // currentCommit 状态判断
+//        if (!currentCommit.isTracking(fileName)) {
+//            actualS = 0;
+//        } else if (actualF == 0) {
+//            actualS = isTrackingSame(currentCommit, givenCommit, fileName) ? 1 : 2;
+//        } else if (currentHash.equals(splitHash)) {
+//            actualS = 1;
+//        } else {
+//            actualS = 2;
+//        }
+
         // currentCommit 状态判断
-        if (!currentCommit.isTracking(fileName)) {
+        if (currentHash == null) { // 如果 cur 不追踪 fileName 直接为 0
             actualS = 0;
-        } else if (actualF == 0) {
-            actualS = isTrackingSame(currentCommit, givenCommit, fileName) ? 1 : 2;
-        } else if (currentHash.equals(splitHash)) {
+        } else if (actualF == 0) { // 如果 spl 不追踪而 cur 追踪则为 1
             actualS = 1;
-        } else {
-            actualS = 2;
+        } else { // 如果 spl 追踪，cur 也追踪
+            if (currentHash.equals(splitHash)) { // 如果追踪相同，则为 1
+                actualS = 1;
+            } else { // 如果追踪不同，则为 2
+                actualS = 2;
+            }
         }
 
         // givenCommit 状态判断
-        if (!givenCommit.isTracking(fileName)) {
+        if (givenHash == null) { // 如果 giv 不追踪 fileName 直接为 0
             actualT = 0;
-        } else if (actualF == 0) {
-            actualT = isTrackingSame(currentCommit, givenCommit, fileName) ? 1 : 2;
-        } else if (givenHash.equals(splitHash)) {
+        } else if ((actualF == 0) && (actualS == 0)) { // 如果 giv 追踪，spl 和 cur 都不追踪，则为 1
             actualT = 1;
-        } else {
-            actualT = 2;
+        } else { // 如果 spl 和 cur 至少有一个在追踪（01，10，11，12）
+            if (givenHash.equals(splitHash)) { // 如果 giv 与 spl 追踪相同，则与 actualF 相同
+                actualT = actualF;
+            } else if (givenHash.equals(currentHash)) { // 如果 giv 与 cur 追踪相同，则与 actualS 相同
+                actualT = actualS;
+            } else { // 如果 giv 追踪的既和 spl 不同，也和 cur 不同，则一定为 2
+                actualT = 2;
+            }
         }
+
+//        // givenCommit 状态判断
+//        if (!givenCommit.isTracking(fileName)) {
+//            actualT = 0;
+//        } else if (actualF == 0) {
+//            actualT = isTrackingSame(currentCommit, givenCommit, fileName) ? 1 : 2;
+//        } else if (givenHash.equals(splitHash)) {
+//            actualT = 1;
+//        } else {
+//            actualT = 2;
+//        }
 
         if (t == 3) {
             // 检查是否是双方都改了但内容不同：1-2-2
@@ -197,12 +225,12 @@ public class MergeManager {
      * @param fileName 文件名
      * @return 是否追踪相同内容
      */
-    private boolean isTrackingSame(Commit c1, Commit c2, String fileName) {
-        if (!c1.isTracking(fileName) || !c2.isTracking(fileName)) return false;
-        String hash1 = c1.getTrackedFile().get(fileName);
-        String hash2 = c2.getTrackedFile().get(fileName);
-        return hash1.equals(hash2);
-    }
+//    private boolean isTrackingSame(Commit c1, Commit c2, String fileName) {
+//        if (!c1.isTracking(fileName) || !c2.isTracking(fileName)) return false;
+//        String hash1 = c1.getTrackedFile().get(fileName);
+//        String hash2 = c2.getTrackedFile().get(fileName);
+//        return hash1.equals(hash2);
+//    }
 
     /**
      * 执行 checkout 操作：将需要检出的文件从 givenCommit 还原到工作区，并添加到暂存区。
