@@ -220,13 +220,14 @@ public class Repository {
 
         message("===");
         message("commit %s", commitId);
-        if (parents.size() == 2) {
-            message("Merge:");
+        if (parents.size() > 1) {
+            String abbrP1 = parents.get(0).substring(0, 6);
+            String abbrP2 = parents.get(1).substring(0, 6);
+            message("Merge: %s %s", abbrP1, abbrP2);
         }
         message("Date: %s", formattedTime);
         message("%s", commitMsg);
         System.out.println();
-
     }
 
     /**

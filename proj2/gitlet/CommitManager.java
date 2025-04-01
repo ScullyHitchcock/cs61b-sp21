@@ -49,8 +49,8 @@ public class CommitManager implements Serializable {
 
     /* 返回当前 head 指针指向的 Commit 对象 */
     public Commit getHeadCommit() {
-        String headHash = branches.get(headBranchName);
-        return getCommit(headHash);
+        String headId = branches.get(headBranchName);
+        return getCommit(headId);
     }
 
     /* 以 Map 形式返回所有 commit id 和 commit msg */
@@ -72,15 +72,32 @@ public class CommitManager implements Serializable {
 
     /* 传入 branch 名，返回该 branch 的最新 commit 对象，若 branch 不存在，返回 null */
     public Commit getBranchCommit(String branch) {
-        String branchCommitHash = branches.get(branch);
-        if (branchCommitHash == null) return null;
-        return getCommit(branchCommitHash);
+        String branchCommitId = branches.get(branch);
+        if (branchCommitId == null) return null;
+        return getCommit(branchCommitId);
     }
 
-    /* 根据 id 访问对应的 Commit 对象数据，如果不存在，返回 null */
+    /* 根据 id 访问对应的 Commit 对象数据，如果不存在，则进行模糊查找，如果仍然查找失败或匹配不唯一，返回 null */
     public Commit getCommit(String id) {
-        File commitFile = Utils.join(Repository.COMMITS, id);
-        if (!commitFile.exists()) return null;
+        String matchId = null;
+        if (commits.containsKey(id)) {
+            matchId = id;
+        } else {
+            int matchCount = 0;
+            for (String commitId : commits.keySet()) {
+                if (commitId.startsWith(id)) {
+                    matchCount += 1;
+                    matchId = commitId;
+                }
+            }
+            if (matchCount != 1) {
+                return null;
+            }
+        }
+        File commitFile = Utils.join(Repository.COMMITS, matchId);
+        if (!commitFile.exists()) {
+            return null;
+        }
         return Utils.readObject(commitFile, Commit.class);
     }
 
