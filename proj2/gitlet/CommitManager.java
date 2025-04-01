@@ -9,13 +9,13 @@ import java.util.*;
  * 负责维护提交图、分支指针、HEAD 状态等。
  */
 public class CommitManager implements Serializable {
-    // 使用哈希集合，只存放 Commit 对象的哈希值
+    /* 存放 Commit id 与 Commit msg*/
     private final HashMap<String, String> commits;
 
     /* HEAD 指针，指向当前活跃的分支名 */
     private String headBranchName;
 
-    /* 分支指针 map，key为分支名，val为当前分支的最新 commit 哈希值 */
+    /* 分支指针 map，key为分支名，val为当前分支的最新 commit id */
     private final HashMap<String, String> branches;
 
     /**
@@ -30,54 +30,64 @@ public class CommitManager implements Serializable {
         addCommit(initCommit);
     }
 
-    /* 将 manager 保存到 Repository.COMMIT_MANAGER 路径中 */
+    /** 将 manager 保存到 Repository.COMMIT_MANAGER 路径中 */
     public void save() {
         Utils.writeObject(Repository.COMMIT_MANAGER, this);
     }
 
-    /* 获取分支名列表 */
-    public List<String> getBranches() {
+
+    /**
+     * 获取所有分支及其最新 Commit 的映射关系。
+     *
+     * @return 一个 Map，其中 key 为分支名，value 为对应分支的最新 Commit ID
+     */
+    public HashMap<String, String> getBranches() {
+        return branches;
+    }
+
+    /** 获取分支名列表 */
+    public List<String> getBranchNames() {
         List<String> branches = new ArrayList<>(this.branches.keySet());
         Collections.sort(branches);
         return branches;
     }
 
-    /* 返回当前活跃的分支名 */
+    /** 返回当前活跃的分支名 */
     public String headBranch() {
         return headBranchName;
     }
 
-    /* 返回当前 head 指针指向的 Commit 对象 */
+    /** 返回当前 head 指针指向的 Commit 对象 */
     public Commit getHeadCommit() {
         String headId = branches.get(headBranchName);
         return getCommit(headId);
     }
 
-    /* 以 Map 形式返回所有 commit id 和 commit msg */
+    /** 以 Map 形式返回所有 commit id 和 commit msg */
     public HashMap<String, String> getAllCommits() {
         return commits;
     }
 
-    /* 切换当前 head 指针到指定分支上 */
+    /** 切换当前 head 指针到指定分支上 */
     public void changeHeadTo(String branchName) {
-        if (branches.containsKey(branchName)) {
+        if (containsBranch(branchName)) {
             headBranchName = branchName;
         }
     }
 
-    /* 传入 commit id，将对应的 commit 设置为 HEAD */
+    /** 传入 commit id，将对应的 commit 设置为 HEAD */
     public void resetHeadCommit(String id) {
         branches.put(headBranchName, id);
     }
 
-    /* 传入 branch 名，返回该 branch 的最新 commit 对象，若 branch 不存在，返回 null */
+    /** 传入 branch 名，返回该 branch 的最新 commit 对象，若 branch 不存在，返回 null */
     public Commit getBranchCommit(String branch) {
         String branchCommitId = branches.get(branch);
         if (branchCommitId == null) return null;
         return getCommit(branchCommitId);
     }
 
-    /* 根据 id 访问对应的 Commit 对象数据，如果不存在，则进行模糊查找，如果仍然查找失败或匹配不唯一，返回 null */
+    /** 根据 id 访问对应的 Commit 对象数据，如果不存在，则进行模糊查找，如果仍然查找失败或匹配不唯一，返回 null */
     public Commit getCommit(String id) {
         String matchId = null;
         if (commits.containsKey(id)) {
@@ -101,7 +111,7 @@ public class CommitManager implements Serializable {
         return Utils.readObject(commitFile, Commit.class);
     }
 
-    /* 判断 manager 是否有指定分支名 */
+    /** 判断 manager 是否有指定分支名 */
     public boolean containsBranch(String branchName) {
         return branches.containsKey(branchName);
     }
@@ -118,7 +128,7 @@ public class CommitManager implements Serializable {
         resetHeadCommit(id);
     }
 
-    /* 创建新分支引用，成功创建返回 true，否则 false */
+    /** 创建新分支引用，成功创建返回 true，否则 false */
     public boolean createNewBranch(String branchName) {
         if (branches.containsKey(branchName)) return false;
         String headCommitHash = branches.get(headBranchName);
@@ -126,12 +136,12 @@ public class CommitManager implements Serializable {
         return true;
     }
 
-    /* 仅删除分支引用，不影响 commits */
+    /** 仅删除分支引用，不影响 commits */
     public void removeBranch(String branchName) {
         branches.remove(branchName);
     }
 
-    /* 输入指定提交信息 msg，输出带有此信息的 commit id 列表 */
+    /** 输入指定提交信息 msg，输出带有此信息的 commit id 列表 */
     public List<Commit> findByMessage(String msg) {
         ArrayList<Commit> res = new ArrayList<>();
         for (Map.Entry<String, String> entry: commits.entrySet()) {
@@ -184,7 +194,7 @@ public class CommitManager implements Serializable {
      * @param commitId 起始提交的 ID
      * @return 包含所有祖先 ID 的集合
      */
-    private Set<String> getAllAncestors(String commitId) {
+    public Set<String> getAllAncestors(String commitId) {
         Set<String> ancestors = new HashSet<>();
         Queue<String> queue = new LinkedList<>();
         // 初始在队列加入元素自身

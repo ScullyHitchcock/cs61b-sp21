@@ -29,6 +29,8 @@ public class Repository {
             /** commit管理器和文件管理器 */
             public static File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
             public static File FILE_MANAGER = join(GITLET_DIR, "fileManager");
+            public static File REMOTE_REPO;
+            public static String REMOTE_NAME;
 
     /** 仅供测试用 */
     public static void refreshCWDForUnitTest() {
@@ -48,18 +50,16 @@ public class Repository {
     public static void setup() {
 
         if (GITLET_DIR.exists()) {
-            throw Utils.error("A Gitlet version-control system already exists in the current directory.");
+            throw error("A Gitlet version-control system already exists in the current directory.");
         }
         GITLET_DIR.mkdir();
         COMMITS.mkdir();
         STAGING_BLOBS.mkdir();
         BLOBS.mkdir();
         // 创建CommitManager，保存
-        CommitManager manager = new CommitManager();
-        manager.save();
+        new CommitManager().save();
         // 创建CWDManager，保存
-        FileManager fileManager = new FileManager();
-        fileManager.save();
+        new FileManager().save();
     }
 
     /**
@@ -68,7 +68,7 @@ public class Repository {
      * @return CommitManager 管理器
      */
     public static CommitManager callCommitManager() {
-        return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
+        return readObject(COMMIT_MANAGER, CommitManager.class);
     }
 
     /**
@@ -77,7 +77,7 @@ public class Repository {
      * @return FileManager 管理器
      */
     public static FileManager callFileManager() {
-        FileManager manager = Utils.readObject(FILE_MANAGER, FileManager.class);
+        FileManager manager = readObject(FILE_MANAGER, FileManager.class);
         manager.updateFiles();
         return manager;
     }
@@ -345,7 +345,7 @@ public class Repository {
         CommitManager commitManager = callCommitManager();
         Commit head = commitManager.getHeadCommit();
         String headBranch = commitManager.headBranch();
-        List<String> branches = commitManager.getBranches();
+        List<String> branches = commitManager.getBranchNames();
         List<String> stagingFiles = fileManager.getStagedFiles();
         List<String> removedFiles = fileManager.getRemovedFiles();
         List<String> modifiedFiles = fileManager.getModifiedFiles(head);
@@ -512,5 +512,25 @@ public class Repository {
             // 创建合并提交，附加两个父提交
             commit("Merged " + branch + " into " + commitManager.headBranch() + ".", branch);
         }
+    }
+
+    public static void addRemote(String remoteName, String remoteDir) {
+        REMOTE_NAME = remoteName;
+        String convertedPath = remoteDir.replace("/", File.separator);
+        REMOTE_REPO = join(convertedPath, ".gitlet");
+    }
+
+    public static void rmRemote(String remoteName) {
+        REMOTE_NAME = null;
+        REMOTE_REPO = null;
+    }
+
+    public static void push(String remoteName, String remoteBranch) {
+    }
+
+    public static void fetch(String remoteName, String remoteBranch) {
+    }
+
+    public static void pull(String remoteName, String remoteBranch) {
     }
 }
