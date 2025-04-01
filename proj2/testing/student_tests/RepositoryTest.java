@@ -1,5 +1,6 @@
-package gitlet;
+package testing.student_tests;
 
+import gitlet.*;
 import org.junit.jupiter.api.*;
 import java.io.*;
 import java.nio.file.Path;
@@ -36,7 +37,7 @@ public class RepositoryTest {
 
         // 设置为临时目录
         System.setProperty("user.dir", candidate.toPath().toAbsolutePath().toString());
-        Repository.refreshCWDForUnitTest();
+        Repository.refreshCWDForUnitTest(new File(System.getProperty("user.dir")));
     }
 
     @AfterEach
@@ -739,7 +740,7 @@ public class RepositoryTest {
         String b1Head = manager.getBranchCommit("b1").id();
         String b2Head = manager.getBranchCommit("b2").id();
 
-        Commit splitPoint = manager.findSplitPoint(b1Head, b2Head);
+        Commit splitPoint = manager.findSplitPoint(manager, b1Head, b2Head);
 
         assertEquals("commitB", splitPoint.getMessage(), "Split point should be commitB");
     }

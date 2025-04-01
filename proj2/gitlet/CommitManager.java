@@ -162,9 +162,9 @@ public class CommitManager implements Serializable {
      * @param commitId2 第二个提交的 ID
      * @return 最近公共祖先的 Commit 对象
      */
-    public Commit findSplitPoint(String commitId1, String commitId2) {
+    public Commit findSplitPoint(CommitManager cm, String commitId1, String commitId2) {
         // 先获得 commitId1 的所有祖先
-        Set<String> ancestors = getAllAncestors(commitId1);
+        Set<String> ancestors = cm.getAllAncestors(commitId1);
         // 从 commitId2 向上遍历查找第一个出现在 ancestors 中的 commit
         Queue<String> queue = new LinkedList<>();
         queue.add(commitId2);
