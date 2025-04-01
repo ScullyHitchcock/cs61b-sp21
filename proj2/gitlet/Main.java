@@ -24,30 +24,37 @@ public class Main {
                     break;
                 case "add":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.addFile(args[1]);
                     break;
                 case "commit":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.commit(args[1], null);
                     break;
                 case "rm":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.remove(args[1]);
                     break;
                 case "log":
                     validateNumArgs(args, 1, 1);
+                    validatePath();
                     Repository.log();
                     break;
                 case "global-log":
                     validateNumArgs(args, 1, 1);
+                    validatePath();
                     Repository.globalLog();
                     break;
                 case "find":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.find(args[1]);
                     break;
                 case "status":
                     validateNumArgs(args, 1, 1);
+                    validatePath();
                     Repository.status();
                     break;
                 case "checkout":
@@ -55,23 +62,28 @@ public class Main {
                     if (args.length > 2 && !Arrays.asList(args).contains("--")) {
                         throw Utils.error("Incorrect operands.");
                     }
+                    validatePath();
                     String[] checkoutArgs = Arrays.copyOfRange(args, 1, args.length);
                     Repository.checkout(checkoutArgs);
                     break;
                 case "branch":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.branch(args[1]);
                     break;
                 case "rm-branch":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.rmBranch(args[1]);
                     break;
                 case "reset":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.reset(args[1]);
                     break;
                 case "merge":
                     validateNumArgs(args, 2, 2);
+                    validatePath();
                     Repository.merge(args[1]);
                     break;
                 default:
@@ -93,6 +105,11 @@ public class Main {
     public static void validateNumArgs(String[] args, int mix, int max) {
         if (args.length < mix || args.length > max) {
             throw Utils.error("Incorrect operands.");
+        }
+    }
+    public static void validatePath() {
+        if (!Repository.GITLET_DIR.exists()) {
+            throw Utils.error("Not in an initialized Gitlet directory.");
         }
     }
 }
