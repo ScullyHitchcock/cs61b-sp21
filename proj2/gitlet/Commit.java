@@ -124,11 +124,12 @@ public class Commit implements Serializable {
 
     /** 将 STAGING_BLOBS 文件夹中的文件快照复制到 BLOBS 文件夹中。 */
     private void permanentSaveBlob(String fileHash) {
-//        File oldFile = Utils.join(Repository.STAGING_BLOBS, fileHash);
-//        String content = Utils.readContentsAsString(oldFile);
-//        File newFile = Utils.join(Repository.BLOBS, fileHash);
-//        Utils.writeContents(newFile, content);
-        Utils.copy(Repository.STAGING_BLOBS, Repository.BLOBS, fileHash);
+        File oldFile = Utils.join(Repository.STAGING_BLOBS, fileHash);
+        String content = Utils.readContentsAsString(oldFile);
+        File newFile = Utils.join(Repository.BLOBS, fileHash);
+        if (!newFile.exists()) {
+            Utils.writeContents(newFile, content);
+        }
     }
 
     /** 取消跟踪文件 fileName。 */

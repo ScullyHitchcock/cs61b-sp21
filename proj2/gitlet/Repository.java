@@ -29,13 +29,10 @@ public class Repository {
             /** commit管理器和文件管理器 */
             public static File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
             public static File FILE_MANAGER = join(GITLET_DIR, "fileManager");
-            public static String REMOTE_REPO;
-            public static String REMOTE_NAME;
-            public static HashMap<String, String> remoteMap;
 
     /** 仅供测试用 */
-    public static void refreshCWDForUnitTest(File cwd) {
-        CWD = cwd;
+    public static void refreshCWDForUnitTest() {
+        CWD = new File(System.getProperty("user.dir"));
         GITLET_DIR = join(CWD, ".gitlet");
         STAGING_BLOBS = join(GITLET_DIR, "staging");
         BLOBS = join(GITLET_DIR, "blobs");
@@ -51,17 +48,18 @@ public class Repository {
     public static void setup() {
 
         if (GITLET_DIR.exists()) {
-            throw error("A Gitlet version-control system already exists in the current directory.");
+            throw Utils.error("A Gitlet version-control system already exists in the current directory.");
         }
         GITLET_DIR.mkdir();
         COMMITS.mkdir();
         STAGING_BLOBS.mkdir();
         BLOBS.mkdir();
-        remoteMap = new HashMap<>();
         // 创建CommitManager，保存
-        new CommitManager().save();
+        CommitManager manager = new CommitManager();
+        manager.save();
         // 创建CWDManager，保存
-        new FileManager().save();
+        FileManager fileManager = new FileManager();
+        fileManager.save();
     }
 
     /**
@@ -70,7 +68,7 @@ public class Repository {
      * @return CommitManager 管理器
      */
     public static CommitManager callCommitManager() {
-        return readObject(COMMIT_MANAGER, CommitManager.class);
+        return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
     }
 
     /**
@@ -79,7 +77,7 @@ public class Repository {
      * @return FileManager 管理器
      */
     public static FileManager callFileManager() {
-        FileManager manager = readObject(FILE_MANAGER, FileManager.class);
+        FileManager manager = Utils.readObject(FILE_MANAGER, FileManager.class);
         manager.updateFiles();
         return manager;
     }
@@ -347,7 +345,7 @@ public class Repository {
         CommitManager commitManager = callCommitManager();
         Commit head = commitManager.getHeadCommit();
         String headBranch = commitManager.headBranch();
-        List<String> branches = commitManager.getBranchNames();
+        List<String> branches = commitManager.getBranches();
         List<String> stagingFiles = fileManager.getStagedFiles();
         List<String> removedFiles = fileManager.getRemovedFiles();
         List<String> modifiedFiles = fileManager.getModifiedFiles(head);
@@ -480,7 +478,7 @@ public class Repository {
         Commit branchCommit = commitManager.getBranchCommit(branch);
         String hId = headCommit.id();
         String bId = branchCommit.id();
-        Commit splitPoint = commitManager.findSplitPoint(commitManager, hId, bId);
+        Commit splitPoint = commitManager.findSplitPoint(hId, bId);
         if (splitPoint.id().equals(hId)) {
             checkout(new String[]{branch});
             message("Current branch fast-forwarded.");
@@ -514,42 +512,5 @@ public class Repository {
             // 创建合并提交，附加两个父提交
             commit("Merged " + branch + " into " + commitManager.headBranch() + ".", branch);
         }
-    }
-
-    public static void addRemote(String remoteName, String remoteDir) {
-        remoteMap.put(remoteName, remoteDir.replace("/", File.separator));
-    }
-
-    public static void rmRemote(String remoteName) {
-        remoteMap.remove(remoteName);
-    }
-
-    public static void push(String remoteName, String remoteBranch) {
-        Repository remoteRepo = new Repository();
-        String remoteDir = remoteMap.get(remoteName);
-        File remoteCwd = join(remoteDir).getParentFile();
-        remoteRepo.refreshCWDForUnitTest(remoteCwd);
-
-        // 打开远程仓库和本地仓库的 commitManager
-        CommitManager remoteCommitManager = remoteRepo.callCommitManager();
-        CommitManager commitManager = callCommitManager();
-
-        // 获取远程仓库和本地仓库的 HEAD
-        Commit headCommit = commitManager.getHeadCommit();
-        Commit remoteBranchCommit = remoteCommitManager.getBranchCommit(remoteBranch);
-
-        // 查询两者的分裂点（最近共同祖先），如果分裂点是远程仓库的 HEAD，说明远程分支的 HEAD 位于当前本地 HEAD 的历史中
-        Commit splitPoint = commitManager.findSplitPoint(remoteCommitManager, remoteBranchCommit.id(), headCommit.id());
-        if (splitPoint.id().equals(remoteBranchCommit.id())) {
-            // 进入处理逻辑
-            message("xxxxx");
-        }
-
-    }
-
-    public static void fetch(String remoteName, String remoteBranch) {
-    }
-
-    public static void pull(String remoteName, String remoteBranch) {
     }
 }

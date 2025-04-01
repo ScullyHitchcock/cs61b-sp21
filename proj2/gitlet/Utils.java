@@ -337,11 +337,4 @@ class Utils {
         String content = readContentsAsString(file);
         return sha1(fileName, content);
     }
-
-    static void copy(File oldDir, File newDir, String fileName) {
-        File oldFile = Utils.join(oldDir, fileName);
-        String content = Utils.readContentsAsString(oldFile);
-        File newFile = Utils.join(newDir, fileName);
-        Utils.writeContents(newFile, content);
-    }
 }
