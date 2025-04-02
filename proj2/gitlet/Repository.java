@@ -76,8 +76,8 @@ public class Repository {
      *
      * @return FileManager 管理器
      */
-    public static FileManager callFileManager() {
-        FileManager manager = Utils.readObject(FILE_MANAGER, FileManager.class);
+    public static FileManager callFileManager(File path) {
+        FileManager manager = Utils.readObject(path, FileManager.class);
         manager.updateFiles();
         return manager;
     }
@@ -96,7 +96,7 @@ public class Repository {
         // 无论如何确保 fileName 在 fileManager.removal 区中不存在。
 
         Commit headCommit = callCommitManager(COMMIT_MANAGER).getHeadCommit();
-        FileManager fileManager = callFileManager();
+        FileManager fileManager = callFileManager(FILE_MANAGER);
 
         // fileManager 利用 headCommit 和 fileName
         if (!fileManager.isInCWD(fileName)) {
@@ -122,7 +122,7 @@ public class Repository {
         // 无论如何确保 fileName 在 fileManager.addition 区中不存在。
 
         Commit headCommit = callCommitManager(COMMIT_MANAGER).getHeadCommit();
-        FileManager fileManager = callFileManager();
+        FileManager fileManager = callFileManager(FILE_MANAGER);
 
         if ((!fileManager.isStagingInAdd(fileName)) && (!headCommit.isTracking(fileName))) {
             throw error("No reason to remove the file.");
@@ -143,7 +143,7 @@ public class Repository {
      */
     public static void commit(String commitMessage, String branch) {
 
-        FileManager fileManager = callFileManager();
+        FileManager fileManager = callFileManager(FILE_MANAGER);
         Map<String, String> addition = fileManager.getAddition();
         Set<String> removal = fileManager.getRemoval();
 
@@ -254,7 +254,7 @@ public class Repository {
     public static void checkout(String[] checkoutArgs) {
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit head = commitManager.getHeadCommit();
-        FileManager fileManager = callFileManager();
+        FileManager fileManager = callFileManager(FILE_MANAGER);
 
         if (checkoutArgs.length == 1) {
             // checkout [branch name]
@@ -341,7 +341,7 @@ public class Repository {
      * 展示当前所有状态，包括分支、暂存区、未追踪文件等。
      */
     public static void status() {
-        FileManager fileManager = callFileManager();
+        FileManager fileManager = callFileManager(FILE_MANAGER);
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit head = commitManager.getHeadCommit();
         String headBranch = commitManager.headBranch();
@@ -428,7 +428,7 @@ public class Repository {
         if (commit == null) {
             throw error("No commit with that id exists.");
         }
-        FileManager fileManager = callFileManager();
+        FileManager fileManager = callFileManager(FILE_MANAGER);
         if (!fileManager.getUntrackedFiles(commitManager.getHeadCommit()).isEmpty()) {
             throw error("There is an untracked file in the way; delete it, or add and commit it first.");
         }
@@ -456,7 +456,7 @@ public class Repository {
         // 如果当前暂存区非空，报错 "You have uncommitted changes."
         // 如果分支 branch 不存在，报错 "A branch with that name does not exist."
         // 如果当前分支与 branch 相同，报错 "Cannot merge a branch with itself."
-        FileManager fileManager = callFileManager();
+        FileManager fileManager = callFileManager(FILE_MANAGER);
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Map<String, String> addition = fileManager.getAddition();
         Set<String> removal = fileManager.getRemoval();
@@ -525,7 +525,7 @@ public class Repository {
         // 打开 commitManager，储存远程仓库信息：仓库名和仓库的地址（仓库的 CommitManager 地址）
         File remoteGitletDir = new File(remoteAddress);
         File remoteCommitManager = join(remoteGitletDir, "CommitManager");
-        commitManager.addRemoteRepo(remoteName, remoteCommitManager);
+        commitManager.addRemoteRepo(remoteName, remoteGitletDir);
         commitManager.save();
     }
 
@@ -539,24 +539,91 @@ public class Repository {
     public static void push(String remoteName, String remoteBranchName) {
         // 打开远程仓库和本地仓库各自的 commitManager
         CommitManager localCM = callCommitManager(COMMIT_MANAGER);
-        File remoteCMfile = localCM.getRemoteRepos().get(remoteName);
-        if (!remoteCMfile.exists()) {
+        File remoteGitletDir = localCM.getRemoteRepos().get(remoteName);
+        if (!remoteGitletDir.exists()) {
             throw error("Remote directory not found.");
         }
-        CommitManager remoteCM = callCommitManager(remoteCMfile);
+        CommitManager remoteCM = callCommitManager(join(remoteGitletDir, "CommitManager"));
 
         // 检查 remoteCM 是否存在 remoteBranchName，没有则创建，并设置为 HEAD
+        if (!remoteCM.containsBranch(remoteBranchName)) {
+            remoteCM.createNewBranch(remoteBranchName);
+            remoteCM.changeHeadTo(remoteBranchName);
+        }
+
         // 查询 remoteCM 和 localCM 各自的 HEAD commit 的 split point
+        Commit remoteHead = remoteCM.getHeadCommit();
+        Commit localHead = localCM.getHeadCommit();
+        Commit splitPoint = localCM.findSplitPoint(remoteCM, remoteHead.id(), localHead.id());
+
         // 如果 split point 不是 remoteCM 的 HEAD commit，报错
+        if (!remoteHead.id().equals(splitPoint.id())) {
+            throw error("Please pull down remote changes before pushing.");
+        }
         // 从 localCM 的 HEAD commit 开始，直到 split point（不包括），执行 remoteCM.addCommit(commit)
-        // remoteCM.save()
-
-
+        // 因为 CommitManager 中的 commits 是集合形式，无需考虑加入顺序，只需在最后设置 HEAD 指向最新 Commit
+        Commit cur = localHead;
+        while (!cur.id().equals(splitPoint.id())) {
+            remoteCM.addCommit(cur);
+            String parentId = cur.getParentIds().get(0);
+            cur = localCM.getCommit(parentId);
+        }
+        remoteCM.resetHeadCommit(localHead.id());
+        remoteCM.save();
     }
 
     public static void fetch(String remoteName, String remoteBranchName) {
+        // 打开远程仓库和本地仓库各自的 commitManager 和 fileManager
+        CommitManager localCM = callCommitManager(COMMIT_MANAGER);
+        FileManager localFM = callFileManager(FILE_MANAGER);
+        File remoteGitletDir = localCM.getRemoteRepos().get(remoteName);
+        if (!remoteGitletDir.exists()) {
+            throw error("Remote directory not found.");
+        }
+        CommitManager remoteCM = callCommitManager(join(remoteGitletDir, "CommitManager"));
+        FileManager remoteFM = callFileManager(join(remoteGitletDir, "FileManager"));
+        if (!remoteCM.containsBranch(remoteBranchName)) {
+            throw error("That remote does not have that branch.");
+        }
+
+        // 查询 remoteCM 指定的分支上的 commit 和 localCM 的 HEAD commit 之间的 split point
+        Commit remoteBranchCommit = remoteCM.getBranchCommit(remoteBranchName);
+        Commit localHead = localCM.getHeadCommit();
+        Commit splitPoint = remoteCM.findSplitPoint(localCM, localHead.id(), remoteBranchCommit.id());
+
+        // 保存 localFM 原活跃分支名以备最后复原
+        String orinBranch = localCM.headBranch();
+
+        // localCM 创建新分支以储存远程 commit
+        String remoteBranch = remoteName + "/" + remoteBranchName;
+        if (!localCM.containsBranch(remoteBranch)) {
+            localCM.createNewBranch(remoteBranch);
+        }
+        localCM.changeHeadTo(remoteBranch);
+
+        // localCM 从 remoteCM 中复制所有从 remoteBranchCommit 回溯到 splitPoint（不包括）的所有 commit
+        // localFM 从 remoteFM 中复制对应的 blob 文件
+        Commit cur = remoteBranchCommit;
+        while (!cur.id().equals(splitPoint.id())) {
+            localCM.addCommit(cur);
+            Map<String, String> trackingFiles = cur.getTrackedFile();
+            for (String blobName : trackingFiles.values()) {
+                localFM.fetchBlobFrom(remoteFM, blobName);
+            }
+            String parentId = cur.getParentIds().get(0);
+            cur = remoteCM.getCommit(parentId);
+        }
+        // 最后设置 HEAD 指向最新 commit
+        localCM.resetHeadCommit(remoteBranchCommit.id());
+
+        // 复原 localCM 分支 HEAD 状态
+        localCM.changeHeadTo(orinBranch);
+        localCM.save();
+        localFM.save();
     }
 
     public static void pull(String remoteName, String remoteBranchName) {
+        fetch(remoteName, remoteBranchName);
+        merge(remoteName + "/" + remoteBranchName);
     }
 }

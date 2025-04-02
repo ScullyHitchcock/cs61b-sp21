@@ -739,7 +739,7 @@
 //        String b1Head = manager.getBranchCommit("b1").id();
 //        String b2Head = manager.getBranchCommit("b2").id();
 //
-//        Commit splitPoint = manager.findSplitPoint(b1Head, b2Head);
+//        Commit splitPoint = manager.findSplitPoint(manager, b1Head, b2Head);
 //
 //        assertEquals("commitB", splitPoint.getMessage(), "Split point should be commitB");
 //    }

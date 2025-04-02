@@ -24,6 +24,7 @@ public class CommitManager implements Serializable {
     /**
      * 初始化 CommitManager。
      * 创建 main 分支和初始提交，并将其添加到提交集合中。
+     * 创建初始 commit 并保存
      */
     public CommitManager(File savePath, File commitDir) {
         this.savePath = savePath;
@@ -119,10 +120,12 @@ public class CommitManager implements Serializable {
      */
     public void addCommit(Commit commit) {
         String id = commit.id();
-        String commitMessage = commit.getMessage();
-        commits.put(id, commitMessage);
-        resetHeadCommit(id);
-        commit.save(commitDir);
+        if (!commits.containsKey(id)) {
+            String commitMessage = commit.getMessage();
+            commits.put(id, commitMessage);
+            resetHeadCommit(id);
+            commit.save(commitDir);
+        }
     }
 
     /* 创建新分支引用，成功创建返回 true，否则 false */

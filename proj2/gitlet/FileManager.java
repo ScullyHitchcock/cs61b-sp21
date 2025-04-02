@@ -311,4 +311,15 @@ public class FileManager implements Serializable {
         Collections.sort(untrackedFiles);
         return untrackedFiles;
     }
+
+    public void fetchBlobFrom(FileManager remoteFM, String blobName) {
+        File oldFile = Utils.join(remoteFM.stagingBlobsDir, blobName);
+        if (oldFile.exists()) {
+            String content = Utils.readContentsAsString(oldFile);
+            File newFile = Utils.join(stagingBlobsDir, blobName);
+            if (!newFile.exists()) {
+                Utils.writeContents(newFile, content);
+            }
+        }
+    }
 }
