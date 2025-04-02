@@ -15,65 +15,82 @@ public class Main {
             if (args.length == 0) {
                 throw Utils.error("Please enter a command.");
             }
-            if (args[0].equals("init")) {
-                validateNumArgs(args, 1, 1);
-                Repository.setup();
-            } else if (args[0].equals("add")) {
-                validateNumArgs(args, 2, 2);
-                Repository.addFile(args[1]);
-            } else if (args[0].equals("commit")) {
-                validateNumArgs(args, 2, 2);
-                Repository.commit(args[1], null);
-            } else if (args[0].equals("rm")) {
-                validateNumArgs(args, 2, 2);
-                Repository.remove(args[1]);
-            } else if (args[0].equals("log")) {
-                validateNumArgs(args, 1, 1);
-                Repository.log();
-            } else if (args[0].equals("global-log")) {
-                validateNumArgs(args, 1, 1);
-                Repository.globalLog();
-            } else if (args[0].equals("find")) {
-                validateNumArgs(args, 2, 2);
-                Repository.find(args[1]);
-            } else if (args[0].equals("status")) {
-                validateNumArgs(args, 1, 1);
-                Repository.status();
-            } else if (args[0].equals("checkout")) {
-                validateNumArgs(args, 2, 4);
-                String[] checkoutArgs = Arrays.copyOfRange(args, 1, args.length);
-                Repository.checkout(checkoutArgs);
-            } else if (args[0].equals("branch")) {
-                validateNumArgs(args, 2, 2);
-                Repository.branch(args[1]);
-            } else if (args[0].equals("rm-branch")) {
-                validateNumArgs(args, 2, 2);
-                Repository.rmBranch(args[1]);
-            } else if (args[0].equals("reset")) {
-                validateNumArgs(args, 2, 2);
-                Repository.reset(args[1]);
-            } else if (args[0].equals("merge")) {
-                validateNumArgs(args, 2, 2);
-                Repository.merge(args[1]);
-            } else if (args[0].equals("add-remote")) {
-                validateNumArgs(args, 3, 3);
-                Repository.addRemote(args[1], args[2]);
-            } else if (args[0].equals("rm-remote")) {
-                validateNumArgs(args, 2, 2);
-                Repository.rmRemote(args[1]);
-            } else if (args[0].equals("push")) {
-                validateNumArgs(args, 3, 3);
-                Repository.push(args[1], args[2]);
-            } else if (args[0].equals("fetch")) {
-                validateNumArgs(args, 3, 3);
-                Repository.fetch(args[1], args[2]);
-            } else if (args[0].equals("pull")) {
-                validateNumArgs(args, 3, 3);
-                Repository.pull(args[1], args[2]);
-            } else {
-                throw Utils.error("No command with that name exists.");
+            switch (args[0]) {
+                case "init" -> {
+                    validateNumArgs(args, 1, 1);
+                    Repository.setup();
+                }
+                case "add" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.addFile(args[1]);
+                }
+                case "commit" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.commit(args[1], null);
+                }
+                case "rm" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.remove(args[1]);
+                }
+                case "log" -> {
+                    validateNumArgs(args, 1, 1);
+                    Repository.log();
+                }
+                case "global-log" -> {
+                    validateNumArgs(args, 1, 1);
+                    Repository.globalLog();
+                }
+                case "find" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.find(args[1]);
+                }
+                case "status" -> {
+                    validateNumArgs(args, 1, 1);
+                    Repository.status();
+                }
+                case "checkout" -> {
+                    validateNumArgs(args, 2, 4);
+                    String[] checkoutArgs = Arrays.copyOfRange(args, 1, args.length);
+                    Repository.checkout(checkoutArgs);
+                }
+                case "branch" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.branch(args[1]);
+                }
+                case "rm-branch" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.rmBranch(args[1]);
+                }
+                case "reset" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.reset(args[1]);
+                }
+                case "merge" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.merge(args[1]);
+                }
+                case "add-remote" -> {
+                    validateNumArgs(args, 3, 3);
+                    Repository.addRemote(args[1], args[2]);
+                }
+                case "rm-remote" -> {
+                    validateNumArgs(args, 2, 2);
+                    Repository.rmRemote(args[1]);
+                }
+                case "push" -> {
+                    validateNumArgs(args, 3, 3);
+                    Repository.push(args[1], args[2]);
+                }
+                case "fetch" -> {
+                    validateNumArgs(args, 3, 3);
+                    Repository.fetch(args[1], args[2]);
+                }
+                case "pull" -> {
+                    validateNumArgs(args, 3, 3);
+                    Repository.pull(args[1], args[2]);
+                }
+                default -> throw Utils.error("No command with that name exists.");
             }
-
         } catch (GitletException e) {
             System.out.println(e.getMessage());
             System.exit(0);

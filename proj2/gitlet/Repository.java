@@ -60,8 +60,8 @@ public class Repository {
     public static void setup() {
 
         if (GITLET_DIR.exists()) {
-            throw Utils.error("A Gitlet version-control system " +
-                    "already exists in the current directory.");
+            throw Utils.error("A Gitlet version-control system "
+                    + "already exists in the current directory.");
         }
         GITLET_DIR.mkdir();
         COMMITS.mkdir();
@@ -286,8 +286,8 @@ public class Repository {
             for (String fileName : files) {
                 if (fileManager.isNotTracking(head, fileName)
                         && branchCommit.isTracking(fileName)) {
-                    throw error("There is an untracked file in the way; " +
-                            "delete it, or add and commit it first.");
+                    throw error("There is an untracked file in the way; "
+                            + "delete it, or add and commit it first.");
                 }
             }
             for (String fileName : head.getTrackedFile().keySet()) {
@@ -371,7 +371,9 @@ public class Repository {
         List<String> modifiedFiles = fileManager.getModifiedFiles(head);
         List<String> untrackedFiles = fileManager.getUntrackedFiles(head);
 
-        printStatus(headBranch, branches, stagingFiles, removedFiles, modifiedFiles, untrackedFiles);
+        printStatus(headBranch, branches,
+                stagingFiles, removedFiles,
+                modifiedFiles, untrackedFiles);
     }
 
     /**
@@ -450,8 +452,8 @@ public class Repository {
         }
         FileManager fileManager = callFileManager(FILE_MANAGER);
         if (!fileManager.getUntrackedFiles(commitManager.getHeadCommit()).isEmpty()) {
-            throw error("There is an untracked file in the way; " +
-                    "delete it, or add and commit it first.");
+            throw error("There is an untracked file in the way; "
+                    + "delete it, or add and commit it first.");
         }
         // 将工作区中的所有文件恢复成 commit 时的状态
         // 1 清空工作区
@@ -518,8 +520,8 @@ public class Repository {
             // 执行合并逻辑，若过程中发现未追踪文件可能被覆盖，则终止合并
             boolean merged = mergeManager.merge();
             if (!merged) {
-                throw error("There is an untracked file in the way; " +
-                        "delete it, or add and commit it first.");
+                throw error("There is an untracked file in the way; "
+                        + "delete it, or add and commit it first.");
             }
 
             // 应用合并结果：处理冲突、删除冲突文件、还原合并结果文件
@@ -531,11 +533,10 @@ public class Repository {
             if (mergeManager.encounteredConflict()) {
                 message("Encountered a merge conflict.");
             }
-
+            String newMsg = "Merged " + branch
+                    + " into " + commitManager.headBranch() + ".";
             // 创建合并提交，附加两个父提交
-            commit("Merged " + branch +
-                    " into " + commitManager.headBranch() + ".",
-                    branch);
+            commit(newMsg, branch);
         }
     }
 
