@@ -524,7 +524,6 @@ public class Repository {
 
         // 打开 commitManager，储存远程仓库信息：仓库名和仓库的地址（仓库的 CommitManager 地址）
         File remoteGitletDir = new File(remoteAddress);
-        File remoteCommitManager = join(remoteGitletDir, "CommitManager");
         commitManager.addRemoteRepo(remoteName, remoteGitletDir);
         commitManager.save();
     }
@@ -532,6 +531,9 @@ public class Repository {
     /** 移除远程仓库 */
     public static void rmRemote(String remoteName) {
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
+        if (!commitManager.containsRemoteRepo(remoteName)) {
+            throw error("A remote with that name does not exist.");
+        }
         commitManager.rmRemoteRepo(remoteName);
         commitManager.save();
     }

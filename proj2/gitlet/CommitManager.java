@@ -224,6 +224,10 @@ public class CommitManager implements Serializable {
         remoteRepos.remove(remoteName);
     }
 
+    public boolean containsRemoteRepo(String remoteName) {
+        return remoteRepos.containsKey(remoteName);
+    }
+
     public HashMap<String, File> getRemoteRepos() {
         return remoteRepos;
     }

@@ -313,10 +313,10 @@ public class FileManager implements Serializable {
     }
 
     public void fetchBlobFrom(FileManager remoteFM, String blobName) {
-        File oldFile = Utils.join(remoteFM.stagingBlobsDir, blobName);
+        File oldFile = Utils.join(remoteFM.blobsDir, blobName);
         if (oldFile.exists()) {
             String content = Utils.readContentsAsString(oldFile);
-            File newFile = Utils.join(stagingBlobsDir, blobName);
+            File newFile = Utils.join(blobsDir, blobName);
             if (!newFile.exists()) {
                 Utils.writeContents(newFile, content);
             }
