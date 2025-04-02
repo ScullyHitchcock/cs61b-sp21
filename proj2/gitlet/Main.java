@@ -3,7 +3,7 @@ package gitlet;
 import java.util.Arrays;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+ *  @author CST
  */
 public class Main {
 
@@ -11,109 +11,69 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-        // TODO: what if args is empty?
         try {
             if (args.length == 0) {
                 throw Utils.error("Please enter a command.");
             }
-            String firstArg = args[0];
-            switch(firstArg) {
-                case "init":
-                    validateNumArgs(args, 1, 1);
-                    Repository.setup();
-                    break;
-                case "add":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.addFile(args[1]);
-                    break;
-                case "commit":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.commit(args[1], null);
-                    break;
-                case "rm":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.remove(args[1]);
-                    break;
-                case "log":
-                    validateNumArgs(args, 1, 1);
-                    validatePath();
-                    Repository.log();
-                    break;
-                case "global-log":
-                    validateNumArgs(args, 1, 1);
-                    validatePath();
-                    Repository.globalLog();
-                    break;
-                case "find":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.find(args[1]);
-                    break;
-                case "status":
-                    validateNumArgs(args, 1, 1);
-                    validatePath();
-                    Repository.status();
-                    break;
-                case "checkout":
-                    validateNumArgs(args, 2, 4);
-                    if (args.length > 2 && !Arrays.asList(args).contains("--")) {
-                        throw Utils.error("Incorrect operands.");
-                    }
-                    validatePath();
-                    String[] checkoutArgs = Arrays.copyOfRange(args, 1, args.length);
-                    Repository.checkout(checkoutArgs);
-                    break;
-                case "branch":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.branch(args[1]);
-                    break;
-                case "rm-branch":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.rmBranch(args[1]);
-                    break;
-                case "reset":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.reset(args[1]);
-                    break;
-                case "merge":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.merge(args[1]);
-                    break;
-                case "add-remote":
-                    validateNumArgs(args, 3, 3);
-                    validatePath();
-                    Repository.addRemote(args[1], args[2]);
-                    break;
-                case "rm-remote":
-                    validateNumArgs(args, 2, 2);
-                    validatePath();
-                    Repository.rmRemote(args[1]);
-                    break;
-                case "push":
-                    validateNumArgs(args, 3, 3);
-                    validatePath();
-                    Repository.push(args[1], args[2]);
-                    break;
-                case "fetch":
-                    validateNumArgs(args, 3, 3);
-                    validatePath();
-                    Repository.fetch(args[1], args[2]);
-                    break;
-                case "pull":
-                    validateNumArgs(args, 3, 3);
-                    validatePath();
-                    Repository.pull(args[1], args[2]);
-                    break;
-                default:
-                    throw Utils.error("No command with that name exists.");
+            if (args[0].equals("init")) {
+                validateNumArgs(args, 1, 1);
+                Repository.setup();
+            } else if (args[0].equals("add")) {
+                validateNumArgs(args, 2, 2);
+                Repository.addFile(args[1]);
+            } else if (args[0].equals("commit")) {
+                validateNumArgs(args, 2, 2);
+                Repository.commit(args[1], null);
+            } else if (args[0].equals("rm")) {
+                validateNumArgs(args, 2, 2);
+                Repository.remove(args[1]);
+            } else if (args[0].equals("log")) {
+                validateNumArgs(args, 1, 1);
+                Repository.log();
+            } else if (args[0].equals("global-log")) {
+                validateNumArgs(args, 1, 1);
+                Repository.globalLog();
+            } else if (args[0].equals("find")) {
+                validateNumArgs(args, 2, 2);
+                Repository.find(args[1]);
+            } else if (args[0].equals("status")) {
+                validateNumArgs(args, 1, 1);
+                Repository.status();
+            } else if (args[0].equals("checkout")) {
+                validateNumArgs(args, 2, 4);
+                String[] checkoutArgs = Arrays.copyOfRange(args, 1, args.length);
+                Repository.checkout(checkoutArgs);
+            } else if (args[0].equals("branch")) {
+                validateNumArgs(args, 2, 2);
+                Repository.branch(args[1]);
+            } else if (args[0].equals("rm-branch")) {
+                validateNumArgs(args, 2, 2);
+                Repository.rmBranch(args[1]);
+            } else if (args[0].equals("reset")) {
+                validateNumArgs(args, 2, 2);
+                Repository.reset(args[1]);
+            } else if (args[0].equals("merge")) {
+                validateNumArgs(args, 2, 2);
+                Repository.merge(args[1]);
+            } else if (args[0].equals("add-remote")) {
+                validateNumArgs(args, 3, 3);
+                Repository.addRemote(args[1], args[2]);
+            } else if (args[0].equals("rm-remote")) {
+                validateNumArgs(args, 2, 2);
+                Repository.rmRemote(args[1]);
+            } else if (args[0].equals("push")) {
+                validateNumArgs(args, 3, 3);
+                Repository.push(args[1], args[2]);
+            } else if (args[0].equals("fetch")) {
+                validateNumArgs(args, 3, 3);
+                Repository.fetch(args[1], args[2]);
+            } else if (args[0].equals("pull")) {
+                validateNumArgs(args, 3, 3);
+                Repository.pull(args[1], args[2]);
+            } else {
+                throw Utils.error("No command with that name exists.");
             }
+
         } catch (GitletException e) {
             System.out.println(e.getMessage());
             System.exit(0);
@@ -131,9 +91,15 @@ public class Main {
         if (args.length < mix || args.length > max) {
             throw Utils.error("Incorrect operands.");
         }
+        if (args[0].equals("checkout") && args.length > 2 && !Arrays.asList(args).contains("--")) {
+            throw Utils.error("Incorrect operands.");
+        }
+        if (!args[0].equals("init")) {
+            validatePath();
+        }
     }
     public static void validatePath() {
-        if (!Repository.GITLET_DIR.exists()) {
+        if (!Repository.gitletDir().exists()) {
             throw Utils.error("Not in an initialized Gitlet directory.");
         }
     }

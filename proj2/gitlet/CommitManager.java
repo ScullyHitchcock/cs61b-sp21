@@ -44,9 +44,9 @@ public class CommitManager implements Serializable {
 
     /* 获取分支名列表 */
     public List<String> getBranches() {
-        List<String> branches = new ArrayList<>(this.branches.keySet());
-        Collections.sort(branches);
-        return branches;
+        List<String> branchList = new ArrayList<>(this.branches.keySet());
+        Collections.sort(branchList);
+        return branchList;
     }
 
     /* 返回当前活跃的分支名 */
@@ -80,7 +80,9 @@ public class CommitManager implements Serializable {
     /* 传入 branch 名，返回该 branch 的最新 commit 对象，若 branch 不存在，返回 null */
     public Commit getBranchCommit(String branch) {
         String branchCommitId = branches.get(branch);
-        if (branchCommitId == null) return null;
+        if (branchCommitId == null) {
+            return null;
+        }
         return getCommit(branchCommitId);
     }
 
@@ -130,7 +132,9 @@ public class CommitManager implements Serializable {
 
     /* 创建新分支引用，成功创建返回 true，否则 false */
     public boolean createNewBranch(String branchName) {
-        if (branches.containsKey(branchName)) return false;
+        if (branches.containsKey(branchName)) {
+            return false;
+        }
         String headCommitHash = branches.get(headBranchName);
         branches.put(branchName, headCommitHash);
         return true;

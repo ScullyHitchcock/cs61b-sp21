@@ -1,5 +1,6 @@
 package gitlet;
 
+
 import java.io.File;
 import java.io.Serializable;
 import java.time.Instant;
@@ -127,9 +128,9 @@ public class Commit implements Serializable {
 
     /** 将 STAGING_BLOBS 文件夹中的文件快照复制到 BLOBS 文件夹中。 */
     private void permanentSaveBlob(String fileHash) {
-        File oldFile = Utils.join(Repository.STAGING_BLOBS, fileHash);
+        File oldFile = Utils.join(Repository.stagingBlobs(), fileHash);
         String content = Utils.readContentsAsString(oldFile);
-        File newFile = Utils.join(Repository.BLOBS, fileHash);
+        File newFile = Utils.join(Repository.blobs(), fileHash);
         if (!newFile.exists()) {
             Utils.writeContents(newFile, content);
         }
@@ -193,3 +194,4 @@ public class Commit implements Serializable {
                 Utils.serialize(time));
     }
 }
+

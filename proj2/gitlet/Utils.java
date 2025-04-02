@@ -332,8 +332,10 @@ class Utils {
      *                 exists; otherwise, returns null.
      */
     static String fileHashInCWD(String fileName) {
-        File file = join(Repository.CWD, fileName);
-        if (!file.exists()) return null;
+        File file = join(Repository.cwd(), fileName);
+        if (!file.exists()) {
+            return null;
+        }
         String content = readContentsAsString(file);
         return sha1(fileName, content);
     }

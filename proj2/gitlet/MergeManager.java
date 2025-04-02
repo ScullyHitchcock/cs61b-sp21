@@ -1,5 +1,6 @@
 package gitlet;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,6 +35,8 @@ public class MergeManager {
     private Set<String> checkoutFiles;
     private Set<String> removeFiles;
     private Set<String> conflictFiles;
+    private File workingDir;
+    private File blobDir;
 
     /**
      * 构造一个 MergeManager 实例，初始化提交对象和文件集合。
@@ -43,7 +46,12 @@ public class MergeManager {
      * @param givenCommit 被合并分支的提交
      * @param untrackedFiles 当前工作区中的未追踪文件集合
      */
-    public MergeManager(Commit splitPoint, Commit currentCommit, Commit givenCommit, Collection<String> untrackedFiles) {
+    public MergeManager(Commit splitPoint,
+                        Commit currentCommit,
+                        Commit givenCommit,
+                        Collection<String> untrackedFiles,
+                        File workingDir,
+                        File blobDir) {
         this.splitPoint = splitPoint;
         this.currentCommit = currentCommit;
         this.givenCommit = givenCommit;
@@ -51,6 +59,8 @@ public class MergeManager {
         this.checkoutFiles = new HashSet<>();
         this.removeFiles = new HashSet<>();
         this.conflictFiles = new HashSet<>();
+        this.workingDir = workingDir;
+        this.blobDir = blobDir;
     }
 
     /* 获取三个 Commit 对象正在追踪的所有文件集合 */
@@ -94,7 +104,7 @@ public class MergeManager {
      * @return 若文件合并无冲突返回 true，否则 false
      */
     private boolean merge(String fileName) {
-        if (con(1, 1, 2, fileName) || con(0 ,0 ,1, fileName)) {
+        if (con(1, 1, 2, fileName) || con(0, 0, 1, fileName)) {
             if (untrackedFiles.contains(fileName)) {
                 return false;
             }
@@ -154,17 +164,6 @@ public class MergeManager {
         int actualS;
         int actualT;
 
-//        // currentCommit 状态判断
-//        if (!currentCommit.isTracking(fileName)) {
-//            actualS = 0;
-//        } else if (actualF == 0) {
-//            actualS = isTrackingSame(currentCommit, givenCommit, fileName) ? 1 : 2;
-//        } else if (currentHash.equals(splitHash)) {
-//            actualS = 1;
-//        } else {
-//            actualS = 2;
-//        }
-
         // currentCommit 状态判断
         if (currentHash == null) { // 如果 cur 不追踪 fileName 直接为 0
             actualS = 0;
@@ -193,17 +192,6 @@ public class MergeManager {
             }
         }
 
-//        // givenCommit 状态判断
-//        if (!givenCommit.isTracking(fileName)) {
-//            actualT = 0;
-//        } else if (actualF == 0) {
-//            actualT = isTrackingSame(currentCommit, givenCommit, fileName) ? 1 : 2;
-//        } else if (givenHash.equals(splitHash)) {
-//            actualT = 1;
-//        } else {
-//            actualT = 2;
-//        }
-
         if (t == 3) {
             // 检查是否是双方都改了但内容不同：1-2-2
             if (actualF == 1 && actualS == 2 && actualT == 2) {
@@ -215,23 +203,7 @@ public class MergeManager {
             return (actualF == f && actualS == s && actualT == t);
         }
     }
-
-    /* 判断两个 Commit 对象是否追踪了相同的文件 fileName */
-    /**
-     * 判断两个提交是否对某个文件追踪的版本一致。
-     *
-     * @param c1 第一个提交
-     * @param c2 第二个提交
-     * @param fileName 文件名
-     * @return 是否追踪相同内容
-     */
-//    private boolean isTrackingSame(Commit c1, Commit c2, String fileName) {
-//        if (!c1.isTracking(fileName) || !c2.isTracking(fileName)) return false;
-//        String hash1 = c1.getTrackedFile().get(fileName);
-//        String hash2 = c2.getTrackedFile().get(fileName);
-//        return hash1.equals(hash2);
-//    }
-
+    
     /**
      * 执行 checkout 操作：将需要检出的文件从 givenCommit 还原到工作区，并添加到暂存区。
      */
@@ -264,15 +236,17 @@ public class MergeManager {
         for (String fileName : conflictFiles) {
             String curHash = currentCommit.getTrackedFile().get(fileName);
             String givHash = givenCommit.getTrackedFile().get(fileName);
-            String curContents = (curHash == null) ? null : Utils.readContentsAsString(Utils.join(Repository.BLOBS, curHash));
-            String givContents = (givHash == null) ? null : Utils.readContentsAsString(Utils.join(Repository.BLOBS, givHash));
+            File curFile = Utils.join(blobDir, curHash);
+            File givFile = Utils.join(blobDir, givHash);
+            String curContents = (curHash == null) ? null : Utils.readContentsAsString(curFile);
+            String givContents = (givHash == null) ? null : Utils.readContentsAsString(givFile);
 
             String mergedContents = "<<<<<<< HEAD\n"
                     + (curContents == null ? "" : curContents)
                     + "=======\n"
                     + (givContents == null ? "" : givContents)
                     + ">>>>>>>\n";
-            Utils.writeContents(Utils.join(Repository.CWD, fileName), mergedContents);
+            Utils.writeContents(Utils.join(workingDir, fileName), mergedContents);
 
             Repository.addFile(fileName);
         }

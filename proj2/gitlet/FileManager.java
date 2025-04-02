@@ -167,8 +167,9 @@ public class FileManager implements Serializable {
      * @return 是否已删除
      */
     public boolean hasDeleted(Commit commit, String fileName) {
-        if (isInCWD(fileName)) return false;
-        else {
+        if (isInCWD(fileName)) {
+            return false;
+        } else {
             return (commit.isTracking(fileName) && !isStagingInRm(fileName))
                 || (isStagingInAdd(fileName));
         }
@@ -186,8 +187,12 @@ public class FileManager implements Serializable {
      * @return 是否已修改
      */
     public boolean hasModified(Commit commit, String fileName) {
-        if (!isInCWD(fileName)) return false;
-        if (isNotTracking(commit, fileName)) return false;
+        if (!isInCWD(fileName)) {
+            return false;
+        }
+        if (isNotTracking(commit, fileName)) {
+            return false;
+        }
         return (!isStagingInAdd(fileName) && commit.isTrackingDifferent(fileName))
             || (isStagingInAdd(fileName) && !addition.get(fileName).equals(Utils.fileHashInCWD(fileName)));
     }
@@ -203,7 +208,9 @@ public class FileManager implements Serializable {
      * @return 是否未追踪
      */
     public boolean isNotTracking(Commit commit, String fileName) {
-        if (!isInCWD(fileName)) return false;
+        if (!isInCWD(fileName)) {
+            return false;
+        }
         return (!commit.isTracking(fileName) && !isStagingInAdd(fileName))
             || (isStagingInRm(fileName));
     }

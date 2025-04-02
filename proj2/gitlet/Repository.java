@@ -17,18 +17,18 @@ import static gitlet.Utils.*;
 public class Repository {
 
     /** The current working directory. */
-    public static File CWD = new File(System.getProperty("user.dir"));
-        /** .gitlet 结构 */
-        public static File GITLET_DIR = join(CWD, ".gitlet");
-            /** 暂存文件快照 */
-            public static File STAGING_BLOBS = join(GITLET_DIR, "staging");
-            /** 永久文件快照 */
-            public static File BLOBS = join(GITLET_DIR, "blobs");
-            /** commit 对象 */
-            public static File COMMITS = join(GITLET_DIR, "commits");
-            /** commit管理器和文件管理器 */
-            public static File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
-            public static File FILE_MANAGER = join(GITLET_DIR, "fileManager");
+    private static File CWD = new File(System.getProperty("user.dir"));
+    /** .gitlet 结构 */
+    private static File GITLET_DIR = join(CWD, ".gitlet");
+    /** 暂存文件快照 */
+    private static File STAGING_BLOBS = join(GITLET_DIR, "staging");
+    /** 永久文件快照 */
+    private static File BLOBS = join(GITLET_DIR, "blobs");
+    /** commit 对象 */
+    private static File COMMITS = join(GITLET_DIR, "commits");
+    /** commit管理器和文件管理器 */
+    private static File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
+    private static File FILE_MANAGER = join(GITLET_DIR, "fileManager");
 
     /** 仅供测试用 */
     public static void refreshCWDForUnitTest() {
@@ -41,6 +41,18 @@ public class Repository {
         FILE_MANAGER = join(GITLET_DIR, "fileManager");
     }
 
+    public static File cwd() {
+        return CWD;
+    }
+    public static File gitletDir() {
+        return GITLET_DIR;
+    }
+    public static File stagingBlobs() {
+        return STAGING_BLOBS;
+    }
+    public static File blobs() {
+        return BLOBS;
+    }
     /**
      * 初始化版本库目录和初始提交。
      * 创建 .gitlet 目录及其子目录，并生成初始提交。
@@ -211,8 +223,8 @@ public class Repository {
      */
     private static void printLog(Commit commit) {
         Instant time = commit.getTime();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z", Locale.US)
-                .withZone(ZoneId.systemDefault());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z",
+                Locale.US).withZone(ZoneId.systemDefault());
         String formattedTime = formatter.format(time);
         String commitMsg = commit.getMessage();
         String commitId = commit.id();
@@ -295,9 +307,13 @@ public class Repository {
                 // checkout [commit id] -- [file name]
                 fileName = checkoutArgs[2];
                 commit = commitManager.getCommit(checkoutArgs[0]);
-                if (commit == null) throw error("No commit with that id exists.");
+                if (commit == null) {
+                    throw error("No commit with that id exists.");
+                }
             }
-            if (!commit.isTracking(fileName)) throw error("File does not exist in that commit.");
+            if (!commit.isTracking(fileName)) {
+                throw error("File does not exist in that commit.");
+            }
             fileManager.checkout(commit, fileName);
         }
 
@@ -484,14 +500,13 @@ public class Repository {
             message("Current branch fast-forwarded.");
         } else if (splitPoint.id().equals(bId)) {
             message("Given branch is an ancestor of the current branch.");
-        }
-
-        else {
+        } else {
             // 获取当前工作区中未被追踪的文件列表（用于冲突判断）
             List<String> untrackedFiles = fileManager.getUntrackedFiles(headCommit);
 
             // 创建合并管理器，传入分裂点、当前提交、目标分支提交、未追踪文件
-            MergeManager mergeManager = new MergeManager(splitPoint, headCommit, branchCommit, untrackedFiles);
+            MergeManager mergeManager = new MergeManager(splitPoint, headCommit, branchCommit, untrackedFiles,
+                    CWD, BLOBS);
 
             // 执行合并逻辑，若过程中发现未追踪文件可能被覆盖，则终止合并
             boolean merged = mergeManager.merge();
