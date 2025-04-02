@@ -581,7 +581,7 @@ public class Repository {
             throw error("Remote directory not found.");
         }
         CommitManager remoteCM = callCommitManager(join(remoteGitletDir, "CommitManager"));
-        FileManager remoteFM = callFileManager(join(remoteGitletDir, "FileManager"));
+        FileManager remoteFM = callFileManager(join(remoteGitletDir, "fileManager"));
         if (!remoteCM.containsBranch(remoteBranchName)) {
             throw error("That remote does not have that branch.");
         }
