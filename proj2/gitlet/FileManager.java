@@ -31,7 +31,8 @@ public class FileManager implements Serializable {
     /* 管理区中的所有文件集合，包括工作区的文件和head正在追踪的文件的并集 */
     private Set<String> filesInManagement;
 
-    public FileManager(File savePath, File workingDir, File stagingBlobsDir, File blobsDir, File commitManagerPath) {
+    public FileManager(File savePath, File workingDir,
+                       File stagingBlobsDir, File blobsDir, File commitManagerPath) {
         this.savePath = savePath;
         this.workingDir = workingDir;
         this.stagingBlobsDir = stagingBlobsDir;
@@ -193,8 +194,9 @@ public class FileManager implements Serializable {
         if (isNotTracking(commit, fileName)) {
             return false;
         }
+        String fileHash = Utils.fileHashInCWD(fileName);
         return (!isStagingInAdd(fileName) && commit.isTrackingDifferent(fileName))
-            || (isStagingInAdd(fileName) && !addition.get(fileName).equals(Utils.fileHashInCWD(fileName)));
+            || (isStagingInAdd(fileName) && !addition.get(fileName).equals(fileHash));
     }
 
     /**

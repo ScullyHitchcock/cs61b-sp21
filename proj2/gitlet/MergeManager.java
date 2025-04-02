@@ -236,10 +236,14 @@ public class MergeManager {
         for (String fileName : conflictFiles) {
             String curHash = currentCommit.getTrackedFile().get(fileName);
             String givHash = givenCommit.getTrackedFile().get(fileName);
-            File curFile = Utils.join(blobDir, curHash);
-            File givFile = Utils.join(blobDir, givHash);
-            String curContents = (curHash == null) ? null : Utils.readContentsAsString(curFile);
-            String givContents = (givHash == null) ? null : Utils.readContentsAsString(givFile);
+            String curContents = null;
+            String givContents = null;
+            if (curHash != null) {
+                curContents = Utils.readContentsAsString(Utils.join(blobDir, curHash));
+            }
+            if (givHash != null) {
+                givContents = Utils.readContentsAsString(Utils.join(blobDir, givHash));
+            }
 
             String mergedContents = "<<<<<<< HEAD\n"
                     + (curContents == null ? "" : curContents)

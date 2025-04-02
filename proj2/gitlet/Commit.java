@@ -44,7 +44,8 @@ public class Commit implements Serializable {
 
     /** 创建初始提交对象 */
     public static Commit createInitCommit() {
-        Commit initCommit = new Commit("initial commit", Instant.EPOCH, new ArrayList<>(), new TreeMap<>());
+        Commit initCommit = new Commit("initial commit",
+                Instant.EPOCH, new ArrayList<>(), new TreeMap<>());
         initCommit.createId();
         return initCommit;
     }

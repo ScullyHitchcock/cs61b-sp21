@@ -60,7 +60,8 @@ public class Repository {
     public static void setup() {
 
         if (GITLET_DIR.exists()) {
-            throw Utils.error("A Gitlet version-control system already exists in the current directory.");
+            throw Utils.error("A Gitlet version-control system " +
+                    "already exists in the current directory.");
         }
         GITLET_DIR.mkdir();
         COMMITS.mkdir();
@@ -70,7 +71,8 @@ public class Repository {
         CommitManager manager = new CommitManager(COMMIT_MANAGER, COMMITS);
         manager.save();
         // 传入工作区域各文件目录的路径，创建 fileManager，保存
-        FileManager fileManager = new FileManager(FILE_MANAGER, CWD, STAGING_BLOBS, BLOBS, COMMIT_MANAGER);
+        FileManager fileManager = new FileManager(FILE_MANAGER, CWD,
+                STAGING_BLOBS, BLOBS, COMMIT_MANAGER);
         fileManager.save();
     }
 
@@ -282,8 +284,10 @@ public class Repository {
             }
             List<String> files = plainFilenamesIn(CWD);
             for (String fileName : files) {
-                if (fileManager.isNotTracking(head, fileName) && branchCommit.isTracking(fileName)) {
-                    throw error("There is an untracked file in the way; delete it, or add and commit it first.");
+                if (fileManager.isNotTracking(head, fileName)
+                        && branchCommit.isTracking(fileName)) {
+                    throw error("There is an untracked file in the way; " +
+                            "delete it, or add and commit it first.");
                 }
             }
             for (String fileName : head.getTrackedFile().keySet()) {
@@ -446,7 +450,8 @@ public class Repository {
         }
         FileManager fileManager = callFileManager(FILE_MANAGER);
         if (!fileManager.getUntrackedFiles(commitManager.getHeadCommit()).isEmpty()) {
-            throw error("There is an untracked file in the way; delete it, or add and commit it first.");
+            throw error("There is an untracked file in the way; " +
+                    "delete it, or add and commit it first.");
         }
         // 将工作区中的所有文件恢复成 commit 时的状态
         // 1 清空工作区
@@ -489,7 +494,8 @@ public class Repository {
         // 找出两个分支的分裂点 commit。
         // 如果分裂点与目标分支 branchName 指向的 commit 相同，
         // 什么都不用做，打印"Given branch is an ancestor of the current branch."直接退出。
-        // 如果分裂点与当前分支 headBranchName 指向的 commit 相同，操作 checkout(branchName)，打印"Current branch fast-forwarded."。
+        // 如果分裂点与当前分支 headBranchName 指向的 commit 相同，
+        // 操作 checkout(branchName)，打印"Current branch fast-forwarded."。
         Commit headCommit = commitManager.getHeadCommit();
         Commit branchCommit = commitManager.getBranchCommit(branch);
         String hId = headCommit.id();
@@ -505,13 +511,15 @@ public class Repository {
             List<String> untrackedFiles = fileManager.getUntrackedFiles(headCommit);
 
             // 创建合并管理器，传入分裂点、当前提交、目标分支提交、未追踪文件
-            MergeManager mergeManager = new MergeManager(splitPoint, headCommit, branchCommit, untrackedFiles,
+            MergeManager mergeManager = new MergeManager(splitPoint, headCommit,
+                    branchCommit, untrackedFiles,
                     CWD, BLOBS);
 
             // 执行合并逻辑，若过程中发现未追踪文件可能被覆盖，则终止合并
             boolean merged = mergeManager.merge();
             if (!merged) {
-                throw error("There is an untracked file in the way; delete it, or add and commit it first.");
+                throw error("There is an untracked file in the way; " +
+                        "delete it, or add and commit it first.");
             }
 
             // 应用合并结果：处理冲突、删除冲突文件、还原合并结果文件
@@ -525,7 +533,9 @@ public class Repository {
             }
 
             // 创建合并提交，附加两个父提交
-            commit("Merged " + branch + " into " + commitManager.headBranch() + ".", branch);
+            commit("Merged " + branch +
+                    " into " + commitManager.headBranch() + ".",
+                    branch);
         }
     }
 
@@ -560,7 +570,8 @@ public class Repository {
         if (!remoteGitletDir.exists()) {
             throw error("Remote directory not found.");
         }
-        CommitManager remoteCM = callCommitManager(join(remoteGitletDir, "CommitManager"));
+        File remoteCMpath = join(remoteGitletDir, "CommitManager");
+        CommitManager remoteCM = callCommitManager(remoteCMpath);
 
         // 检查 remoteCM 是否存在 remoteBranchName，没有则创建，并设置为 HEAD
         if (!remoteCM.containsBranch(remoteBranchName)) {
@@ -571,7 +582,9 @@ public class Repository {
         // 查询 remoteCM 和 localCM 各自的 HEAD commit 的 split point
         Commit remoteHead = remoteCM.getHeadCommit();
         Commit localHead = localCM.getHeadCommit();
-        Commit splitPoint = localCM.findSplitPoint(remoteCM, remoteHead.id(), localHead.id());
+        String rmId = remoteHead.id();
+        String lcId = localHead.id();
+        Commit splitPoint = localCM.findSplitPoint(remoteCM, rmId, lcId);
 
         // 如果 split point 不是 remoteCM 的 HEAD commit，报错
         if (!remoteHead.id().equals(splitPoint.id())) {
@@ -597,8 +610,10 @@ public class Repository {
         if (!remoteGitletDir.exists()) {
             throw error("Remote directory not found.");
         }
-        CommitManager remoteCM = callCommitManager(join(remoteGitletDir, "CommitManager"));
-        FileManager remoteFM = callFileManager(join(remoteGitletDir, "fileManager"));
+        File remoteCMpath = join(remoteGitletDir, "CommitManager");
+        File remoteFMpath = join(remoteGitletDir, "fileManager");
+        CommitManager remoteCM = callCommitManager(remoteCMpath);
+        FileManager remoteFM = callFileManager(remoteFMpath);
         if (!remoteCM.containsBranch(remoteBranchName)) {
             throw error("That remote does not have that branch.");
         }
@@ -606,7 +621,8 @@ public class Repository {
         // 查询 remoteCM 指定的分支上的 commit 和 localCM 的 HEAD commit 之间的 split point
         Commit remoteBranchCommit = remoteCM.getBranchCommit(remoteBranchName);
         Commit localHead = localCM.getHeadCommit();
-        Commit splitPoint = remoteCM.findSplitPoint(localCM, localHead.id(), remoteBranchCommit.id());
+        Commit splitPoint = remoteCM.findSplitPoint(localCM,
+                localHead.id(), remoteBranchCommit.id());
 
         // 保存 localFM 原活跃分支名以备最后复原
         String orinBranch = localCM.headBranch();
