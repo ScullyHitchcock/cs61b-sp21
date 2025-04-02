@@ -11,6 +11,7 @@ import java.util.*;
 public class CommitManager implements Serializable {
     private final File savePath;
     private final File commitDir;
+    private final HashMap<String, File> remoteRepos;
     // 使用哈希集合，只存放 Commit 对象的哈希值
     private final HashMap<String, String> commits;
 
@@ -29,6 +30,7 @@ public class CommitManager implements Serializable {
         this.commitDir = commitDir;
         commits = new HashMap<>();
         branches = new HashMap<>();
+        remoteRepos = new HashMap<>();
         headBranchName = "master";
         Commit initCommit = Commit.createInitCommit();
         addCommit(initCommit);
@@ -116,10 +118,11 @@ public class CommitManager implements Serializable {
      * @param commit 要添加的提交对象
      */
     public void addCommit(Commit commit) {
-        String id = commit.save();
+        String id = commit.id();
         String commitMessage = commit.getMessage();
         commits.put(id, commitMessage);
         resetHeadCommit(id);
+        commit.save(commitDir);
     }
 
     /* 创建新分支引用，成功创建返回 true，否则 false */
@@ -149,16 +152,17 @@ public class CommitManager implements Serializable {
     }
 
     /**
-     * 查找两个提交的最近共同祖先（split point）。
+     * 查找两个提交的最近共同祖先（split point），支持输入不同仓库中的提交。
      * 通过广度优先搜索第一个出现在另一个提交祖先集合中的节点。
      *
-     * @param commitId1 第一个提交的 ID
-     * @param commitId2 第二个提交的 ID
-     * @return 最近公共祖先的 Commit 对象
+     * @param otherCM 另一个仓库
+     * @param commitId1 另一个仓库的提交 ID
+     * @param commitId2 本地仓库的提交 ID
+     * @return 两者最近公共祖先的 Commit 对象
      */
-    public Commit findSplitPoint(String commitId1, String commitId2) {
-        // 先获得 commitId1 的所有祖先
-        Set<String> ancestors = getAllAncestors(commitId1);
+    public Commit findSplitPoint(CommitManager otherCM, String commitId1, String commitId2) {
+        // 先获得 otherCM 里的 commitId1 的所有祖先
+        Set<String> ancestors = otherCM.getAllAncestors(commitId1);
         // 从 commitId2 向上遍历查找第一个出现在 ancestors 中的 commit
         Queue<String> queue = new LinkedList<>();
         queue.add(commitId2);
@@ -188,7 +192,7 @@ public class CommitManager implements Serializable {
      * @param commitId 起始提交的 ID
      * @return 包含所有祖先 ID 的集合
      */
-    private Set<String> getAllAncestors(String commitId) {
+    public Set<String> getAllAncestors(String commitId) {
         Set<String> ancestors = new HashSet<>();
         Queue<String> queue = new LinkedList<>();
         // 初始在队列加入元素自身
@@ -207,5 +211,17 @@ public class CommitManager implements Serializable {
             }
         }
         return ancestors;
+    }
+
+    public void addRemoteRepo(String remoteName, File remoteCM) {
+        remoteRepos.put(remoteName, remoteCM);
+    }
+
+    public void rmRemoteRepo(String remoteName) {
+        remoteRepos.remove(remoteName);
+    }
+
+    public HashMap<String, File> getRemoteRepos() {
+        return remoteRepos;
     }
 }

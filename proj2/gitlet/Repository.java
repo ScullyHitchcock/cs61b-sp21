@@ -478,7 +478,7 @@ public class Repository {
         Commit branchCommit = commitManager.getBranchCommit(branch);
         String hId = headCommit.id();
         String bId = branchCommit.id();
-        Commit splitPoint = commitManager.findSplitPoint(hId, bId);
+        Commit splitPoint = commitManager.findSplitPoint(commitManager, hId, bId);
         if (splitPoint.id().equals(hId)) {
             checkout(new String[]{branch});
             message("Current branch fast-forwarded.");
@@ -512,5 +512,51 @@ public class Repository {
             // 创建合并提交，附加两个父提交
             commit("Merged " + branch + " into " + commitManager.headBranch() + ".", branch);
         }
+    }
+
+    /** 添加远程仓库 */
+    public static void addRemote(String remoteName, String remoteAddress) {
+        // 检查是否已经存在 remoteName，存在则报错
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
+        if (commitManager.getRemoteRepos().containsKey(remoteName)) {
+            throw error("A remote with that name already exists.");
+        }
+
+        // 打开 commitManager，储存远程仓库信息：仓库名和仓库的地址（仓库的 CommitManager 地址）
+        File remoteGitletDir = new File(remoteAddress);
+        File remoteCommitManager = join(remoteGitletDir, "CommitManager");
+        commitManager.addRemoteRepo(remoteName, remoteCommitManager);
+        commitManager.save();
+    }
+
+    /** 移除远程仓库 */
+    public static void rmRemote(String remoteName) {
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
+        commitManager.rmRemoteRepo(remoteName);
+        commitManager.save();
+    }
+
+    public static void push(String remoteName, String remoteBranchName) {
+        // 打开远程仓库和本地仓库各自的 commitManager
+        CommitManager localCM = callCommitManager(COMMIT_MANAGER);
+        File remoteCMfile = localCM.getRemoteRepos().get(remoteName);
+        if (!remoteCMfile.exists()) {
+            throw error("Remote directory not found.");
+        }
+        CommitManager remoteCM = callCommitManager(remoteCMfile);
+
+        // 检查 remoteCM 是否存在 remoteBranchName，没有则创建，并设置为 HEAD
+        // 查询 remoteCM 和 localCM 各自的 HEAD commit 的 split point
+        // 如果 split point 不是 remoteCM 的 HEAD commit，报错
+        // 从 localCM 的 HEAD commit 开始，直到 split point（不包括），执行 remoteCM.addCommit(commit)
+        // remoteCM.save()
+
+
+    }
+
+    public static void fetch(String remoteName, String remoteBranchName) {
+    }
+
+    public static void pull(String remoteName, String remoteBranchName) {
     }
 }

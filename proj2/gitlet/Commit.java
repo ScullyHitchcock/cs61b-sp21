@@ -43,7 +43,9 @@ public class Commit implements Serializable {
 
     /** 创建初始提交对象 */
     public static Commit createInitCommit() {
-        return new Commit("initial commit", Instant.EPOCH, new ArrayList<>(), new TreeMap<>());
+        Commit initCommit = new Commit("initial commit", Instant.EPOCH, new ArrayList<>(), new TreeMap<>());
+        initCommit.createId();
+        return initCommit;
     }
 
     /**
@@ -109,6 +111,7 @@ public class Commit implements Serializable {
         for (String fileTobeRemoved: removal) {
             untrackFile(fileTobeRemoved);
         }
+        createId();
     }
 
     /**
@@ -172,15 +175,17 @@ public class Commit implements Serializable {
     }
 
     /** 保存当前提交的数据。 */
-    public String save() {
-        commitId = createId();
-        File f = Utils.join(Repository.COMMITS, commitId);
-        Utils.writeObject(f, this);
-        return commitId;
+    public void save(File commitDir) {
+        Utils.writeObject(Utils.join(commitDir, commitId), this);
     }
 
     /** 创建提交 ID。 */
     private String createId() {
+        commitId = Utils.sha1(
+                Utils.serialize(trackedFile),
+                Utils.serialize(parentCommits),
+                message,
+                Utils.serialize(time));
         return Utils.sha1(
                 Utils.serialize(trackedFile),
                 Utils.serialize(parentCommits),
