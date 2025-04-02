@@ -9,6 +9,8 @@ import java.util.*;
  * 负责维护提交图、分支指针、HEAD 状态等。
  */
 public class CommitManager implements Serializable {
+    private final File savePath;
+    private final File commitDir;
     // 使用哈希集合，只存放 Commit 对象的哈希值
     private final HashMap<String, String> commits;
 
@@ -22,7 +24,9 @@ public class CommitManager implements Serializable {
      * 初始化 CommitManager。
      * 创建 main 分支和初始提交，并将其添加到提交集合中。
      */
-    public CommitManager() {
+    public CommitManager(File savePath, File commitDir) {
+        this.savePath = savePath;
+        this.commitDir = commitDir;
         commits = new HashMap<>();
         branches = new HashMap<>();
         headBranchName = "master";
@@ -30,9 +34,9 @@ public class CommitManager implements Serializable {
         addCommit(initCommit);
     }
 
-    /* 将 manager 保存到 Repository.COMMIT_MANAGER 路径中 */
+    /* 将 manager 保存到 savePath 路径中 */
     public void save() {
-        Utils.writeObject(Repository.COMMIT_MANAGER, this);
+        Utils.writeObject(savePath, this);
     }
 
     /* 获取分支名列表 */
@@ -94,7 +98,7 @@ public class CommitManager implements Serializable {
                 return null;
             }
         }
-        File commitFile = Utils.join(Repository.COMMITS, matchId);
+        File commitFile = Utils.join(commitDir, matchId);
         if (!commitFile.exists()) {
             return null;
         }

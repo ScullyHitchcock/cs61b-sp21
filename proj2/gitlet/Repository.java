@@ -55,7 +55,7 @@ public class Repository {
         STAGING_BLOBS.mkdir();
         BLOBS.mkdir();
         // 创建CommitManager，保存
-        CommitManager manager = new CommitManager();
+        CommitManager manager = new CommitManager(COMMIT_MANAGER, COMMITS);
         manager.save();
         // 创建CWDManager，保存
         FileManager fileManager = new FileManager();
@@ -67,8 +67,8 @@ public class Repository {
      *
      * @return CommitManager 管理器
      */
-    public static CommitManager callCommitManager() {
-        return Utils.readObject(COMMIT_MANAGER, CommitManager.class);
+    public static CommitManager callCommitManager(File path) {
+        return Utils.readObject(path, CommitManager.class);
     }
 
     /**
@@ -95,7 +95,7 @@ public class Repository {
         // 否则则将其加入 fileManager.addition 区（创建或覆盖）
         // 无论如何确保 fileName 在 fileManager.removal 区中不存在。
 
-        Commit headCommit = callCommitManager().getHeadCommit();
+        Commit headCommit = callCommitManager(COMMIT_MANAGER).getHeadCommit();
         FileManager fileManager = callFileManager();
 
         // fileManager 利用 headCommit 和 fileName
@@ -121,7 +121,7 @@ public class Repository {
         // 如果被 HEAD 追踪：就将 fileName 标记为待删除，并删除工作目录中的该文件。
         // 无论如何确保 fileName 在 fileManager.addition 区中不存在。
 
-        Commit headCommit = callCommitManager().getHeadCommit();
+        Commit headCommit = callCommitManager(COMMIT_MANAGER).getHeadCommit();
         FileManager fileManager = callFileManager();
 
         if ((!fileManager.isStagingInAdd(fileName)) && (!headCommit.isTracking(fileName))) {
@@ -157,7 +157,7 @@ public class Repository {
         }
 
         // 读取 head，创建子 commit 更新追踪状态，增加追踪或取消跟踪等
-        CommitManager commitManager = callCommitManager();
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit headCommit = commitManager.getHeadCommit();
         Commit newCommit = headCommit.childCommit(commitMessage);
         if (branch != null) {
@@ -177,7 +177,7 @@ public class Repository {
      * 打印当前分支的提交历史，从 HEAD 回溯到初始提交。
      */
     public static void log() {
-        CommitManager manager = callCommitManager();
+        CommitManager manager = callCommitManager(COMMIT_MANAGER);
         Commit cur = manager.getHeadCommit();
 
         while (true) {
@@ -197,7 +197,7 @@ public class Repository {
      * 打印所有分支的所有提交历史。
      */
     public static void globalLog() {
-        CommitManager manager = callCommitManager();
+        CommitManager manager = callCommitManager(COMMIT_MANAGER);
         Map<String, String> allCommits = manager.getAllCommits();
         for (String commitHash: allCommits.keySet()) {
             printLog(manager.getCommit(commitHash));
@@ -236,7 +236,7 @@ public class Repository {
      * @param msg 提交信息
      */
     public static void find(String msg) {
-        CommitManager manager = callCommitManager();
+        CommitManager manager = callCommitManager(COMMIT_MANAGER);
         List<Commit> commitsWithMsg = manager.findByMessage(msg);
         if (commitsWithMsg.isEmpty()) {
             throw error("Found no commit with that message.");
@@ -252,7 +252,7 @@ public class Repository {
      * @param checkoutArgs 切换参数
      */
     public static void checkout(String[] checkoutArgs) {
-        CommitManager commitManager = callCommitManager();
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit head = commitManager.getHeadCommit();
         FileManager fileManager = callFileManager();
 
@@ -311,7 +311,7 @@ public class Repository {
      * @param branch 分支名称
      */
     public static void branch(String branch) {
-        CommitManager manager = callCommitManager();
+        CommitManager manager = callCommitManager(COMMIT_MANAGER);
         boolean created =  manager.createNewBranch(branch);
         if (created) {
             manager.save();
@@ -326,7 +326,7 @@ public class Repository {
      * @param branch 分支名称
      */
     public static void rmBranch(String branch) {
-        CommitManager commitManager = callCommitManager();
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         if (branch.equals(commitManager.headBranch())) {
             throw error("Cannot remove the current branch.");
         }
@@ -342,7 +342,7 @@ public class Repository {
      */
     public static void status() {
         FileManager fileManager = callFileManager();
-        CommitManager commitManager = callCommitManager();
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit head = commitManager.getHeadCommit();
         String headBranch = commitManager.headBranch();
         List<String> branches = commitManager.getBranches();
@@ -423,7 +423,7 @@ public class Repository {
      * @param commitId 提交 ID
      */
     public static void reset(String commitId) {
-        CommitManager commitManager = callCommitManager();
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit commit = commitManager.getCommit(commitId);
         if (commit == null) {
             throw error("No commit with that id exists.");
@@ -457,7 +457,7 @@ public class Repository {
         // 如果分支 branch 不存在，报错 "A branch with that name does not exist."
         // 如果当前分支与 branch 相同，报错 "Cannot merge a branch with itself."
         FileManager fileManager = callFileManager();
-        CommitManager commitManager = callCommitManager();
+        CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Map<String, String> addition = fileManager.getAddition();
         Set<String> removal = fileManager.getRemoval();
         if (!addition.isEmpty() || !removal.isEmpty()) {

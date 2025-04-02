@@ -36,7 +36,7 @@ public class FileManager implements Serializable {
      * 更新 filesInManagement 获取正在管理的所有文件名列表（当前 HEAD 正在追踪的，和工作区目录下的所有文件名集合）。
      */
     public void updateFiles() {
-        Commit head = Repository.callCommitManager().getHeadCommit();
+        Commit head = Repository.callCommitManager(Repository.COMMIT_MANAGER).getHeadCommit();
         Map<String, String> tracking = head.getTrackedFile();
         List<String> workingFiles = Utils.plainFilenamesIn(Repository.CWD);
         filesInManagement = new HashSet<>();
