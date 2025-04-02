@@ -1,5 +1,6 @@
 package gitlet;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 
@@ -15,6 +16,11 @@ import java.util.*;
  * - 恢复文件到特定 commit 的状态
  */
 public class FileManager implements Serializable {
+    private final File savePath;
+    private final File workingDir;
+    private final File stagingBlobsDir;
+    private final File blobsDir;
+    private final File commitManagerPath;
 
     /* addition 区，以“文件名 -> 文件哈希值”的形式储存特定文件 */
     private Map<String, String> addition;
@@ -25,7 +31,12 @@ public class FileManager implements Serializable {
     /* 管理区中的所有文件集合，包括工作区的文件和head正在追踪的文件的并集 */
     private Set<String> filesInManagement;
 
-    public FileManager() {
+    public FileManager(File savePath, File workingDir, File stagingBlobsDir, File blobsDir, File commitManagerPath) {
+        this.savePath = savePath;
+        this.workingDir = workingDir;
+        this.stagingBlobsDir = stagingBlobsDir;
+        this.blobsDir = blobsDir;
+        this.commitManagerPath = commitManagerPath;
         addition = new HashMap<>();
         removal = new HashSet<>();
         filesInManagement = new HashSet<>();
@@ -36,9 +47,9 @@ public class FileManager implements Serializable {
      * 更新 filesInManagement 获取正在管理的所有文件名列表（当前 HEAD 正在追踪的，和工作区目录下的所有文件名集合）。
      */
     public void updateFiles() {
-        Commit head = Repository.callCommitManager(Repository.COMMIT_MANAGER).getHeadCommit();
+        Commit head = Repository.callCommitManager(commitManagerPath).getHeadCommit();
         Map<String, String> tracking = head.getTrackedFile();
-        List<String> workingFiles = Utils.plainFilenamesIn(Repository.CWD);
+        List<String> workingFiles = Utils.plainFilenamesIn(workingDir);
         filesInManagement = new HashSet<>();
         if (tracking != null) {
             filesInManagement.addAll(tracking.keySet());
@@ -54,7 +65,7 @@ public class FileManager implements Serializable {
      * 保存文件管理器。
      */
     public void save() {
-        Utils.writeObject(Repository.FILE_MANAGER, this);
+        Utils.writeObject(savePath, this);
     }
 
     /**
@@ -81,10 +92,10 @@ public class FileManager implements Serializable {
      * @param fileName 文件名
      */
     public void addToAddition(String fileName) {
-        String content = Utils.readContentsAsString(Utils.join(Repository.CWD, fileName));
+        String content = Utils.readContentsAsString(Utils.join(workingDir, fileName));
         String fileHash = Utils.sha1(fileName, content);
         addition.put(fileName, fileHash);
-        Utils.writeContents(Utils.join(Repository.STAGING_BLOBS, fileHash), content);
+        Utils.writeContents(Utils.join(stagingBlobsDir, fileHash), content);
     }
 
     /**
@@ -121,7 +132,7 @@ public class FileManager implements Serializable {
      * @return 是否存在于工作目录
      */
     public boolean isInCWD(String fileName) {
-        return Utils.join(Repository.CWD, fileName).exists();
+        return Utils.join(workingDir, fileName).exists();
     }
 
     /**
@@ -203,7 +214,7 @@ public class FileManager implements Serializable {
     public void clearStageArea() {
         addition = new HashMap<>();
         removal = new HashSet<>();
-        Utils.clean(Repository.STAGING_BLOBS);
+        Utils.clean(stagingBlobsDir);
     }
 
     /**
@@ -211,7 +222,7 @@ public class FileManager implements Serializable {
      *
      * @param commit 当前 commit
      */
-    static void checkout(Commit commit) {
+    public void checkout(Commit commit) {
         Map<String, String> branchTrackingFiles = commit.getTrackedFile();
         for (String fileName : branchTrackingFiles.keySet()) {
             // 只要工作区的文件与追踪的版本不同，或追踪的文件不在工作区中，都进行 checkout
@@ -227,10 +238,10 @@ public class FileManager implements Serializable {
      * @param commit 当前 commit
      * @param fileName 文件名
      */
-    static void checkout(Commit commit, String fileName) {
+    public void checkout(Commit commit, String fileName) {
         String fileHash = commit.getTrackedFile().get(fileName);
-        String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOBS, fileHash));
-        Utils.writeContents(Utils.join(Repository.CWD, fileName), blobContent);
+        String blobContent = Utils.readContentsAsString(Utils.join(blobsDir, fileHash));
+        Utils.writeContents(Utils.join(workingDir, fileName), blobContent);
     }
 
     /**

@@ -54,11 +54,11 @@ public class Repository {
         COMMITS.mkdir();
         STAGING_BLOBS.mkdir();
         BLOBS.mkdir();
-        // 创建CommitManager，保存
+        // 传入工作区域各文件目录的路径，创建 CommitManager，保存
         CommitManager manager = new CommitManager(COMMIT_MANAGER, COMMITS);
         manager.save();
-        // 创建CWDManager，保存
-        FileManager fileManager = new FileManager();
+        // 传入工作区域各文件目录的路径，创建 fileManager，保存
+        FileManager fileManager = new FileManager(FILE_MANAGER, CWD, STAGING_BLOBS, BLOBS, COMMIT_MANAGER);
         fileManager.save();
     }
 
@@ -279,7 +279,7 @@ public class Repository {
                     restrictedDelete(join(CWD, fileName));
                 }
             }
-            FileManager.checkout(branchCommit);
+            fileManager.checkout(branchCommit);
             commitManager.changeHeadTo(branch);
             fileManager.clearStageArea();
 
@@ -298,7 +298,7 @@ public class Repository {
                 if (commit == null) throw error("No commit with that id exists.");
             }
             if (!commit.isTracking(fileName)) throw error("File does not exist in that commit.");
-            FileManager.checkout(commit, fileName);
+            fileManager.checkout(commit, fileName);
         }
 
         commitManager.save();
@@ -436,7 +436,7 @@ public class Repository {
         // 1 清空工作区
         clean(CWD);
         // 2 checkout
-        FileManager.checkout(commit);
+        fileManager.checkout(commit);
         // 3 重新设置 headCommit
         commitManager.resetHeadCommit(commitId);
         // 4 清空暂存区
