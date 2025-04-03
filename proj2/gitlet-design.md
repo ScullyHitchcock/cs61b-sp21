@@ -80,13 +80,13 @@ The Repository class is designed as a highly modular controller interface. Each 
 
 ## Module Collaboration Diagram
 
-                  User Command  
-                     ↓  
-                 Repository  
-       ┌──────────┬───────────┬───────────┐  
-       ↓          ↓           ↓           ↓  
-   FileManager  CommitManager MergeManager Utils  
-  (Staging)     (Commit DAG)  (Merge Logic) (Utilities)  
+                    User Command  
+                       ↓  
+                    Repository  
+       ┌──────────┬────────────┬────────────┐  
+       ↓          ↓            ↓            ↓  
+    FileManager CommitManager MergeManager  Utils  
+    (Staging)   (Commit DAG)  (Merge Logic) (Utilities)  
 
 ## Key Fields (Directory Structure)
 
