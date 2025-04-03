@@ -3,6 +3,7 @@ package gitlet;
 import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -106,26 +107,31 @@ public class MergeManager {
     }
 
     /**
-     * 对单个文件执行合并判断与操作。
+     * 根据指定文件在 split、current 和 given 提交中的状态编码，执行对应的合并操作。
+     * 具体逻辑：
+     *   对于状态 "112" 或 "001"：如果该文件存在于未追踪文件集合中，则返回 false；否则，将其加入 checkoutFiles 集合。
+     *   对于状态 "110"：将该文件加入 removeFiles 集合。
+     *   对于状态 "123", "120", "102", "012"：如果该文件存在于未追踪文件集合中，则返回 false；否则，将其加入 conflictFiles 集合。
      *
-     * @param fileName 文件名
-     * @return 若文件合并无冲突返回 true，否则 false
+     * @param fileName 要合并的文件名
+     * @return 若合并操作过程中不存在未追踪文件冲突，返回 true；否则返回 false
      */
     private boolean merge(String fileName) {
-        if (con(1, 1, 2, fileName) || con(0, 0, 1, fileName)) {
-            if (untrackedFiles.contains(fileName)) {
-                return false;
+        String statusCode = statusCode(fileName);
+        switch (statusCode) {
+            case "112", "001" -> {
+                if (untrackedFiles.contains(fileName)) {
+                    return false;
+                }
+                checkoutFiles.add(fileName);
             }
-            checkoutFiles.add(fileName);
-        } else if (con(1, 1, 0, fileName)) {
-            removeFiles.add(fileName);
-        } else if (
-                con(1, 2, 3, fileName) || con(1, 2, 0, fileName)
-                || con(1, 0, 2, fileName) || con(0, 1, 2, fileName)) {
-            if (untrackedFiles.contains(fileName)) {
-                return false;
+            case "110" -> removeFiles.add(fileName);
+            case "123", "120", "102", "012" -> {
+                if (untrackedFiles.contains(fileName)) {
+                    return false;
+                }
+                conflictFiles.add(fileName);
             }
-            conflictFiles.add(fileName);
         }
         return true;
     }
@@ -154,70 +160,49 @@ public class MergeManager {
      | 0-1-2   | split 没有，双方都新增内容不同的同名文件        | 产生冲突                             |
      */
 
-    /**
-     * 判断文件是否符合表格中的条件
-     * @param f 对应表格的第一个数字，0 代表 splitPoint 不追踪文件，1 代表正在追踪
-     * @param s 对应表格的第二个数字，0 代表 currentCommit 不追踪，1 代表正在追踪，2 代表追踪且相对 splitPoint 有改动
-     * @param t 对应表格的第三个数字，0 代表 givenCommit 不追踪，1 代表追踪，2 代表追踪且相对 splitPoint 有改动，
-     *          3 代表追踪且相对 splitPoint 和 currentCommit 都有改动
-     * @param fileName 文件名
-     * @return true or false
-     */
-    private boolean con(int f, int s, int t, String fileName) {
+    /** 计算并返回 fileName 的状态编码 */
+    private String statusCode(String fileName) {
         String splitHash = splitPoint.getTrackedFile().get(fileName);
         String currentHash = currentCommit.getTrackedFile().get(fileName);
         String givenHash = givenCommit.getTrackedFile().get(fileName);
 
-        int actualF = (splitHash == null) ? 0 : 1;
-        int actualS;
-        int actualT;
+        // 计算 f 的高度：若 splitHash 不为 null，则 f 为 1，否则为 0
+        int f = (splitHash != null) ? 1 : 0;
 
-        // currentCommit 状态判断
-        if (currentHash == null) { // 如果 cur 不追踪 fileName 直接为 0
-            actualS = 0;
-        } else if (actualF == 0) { // 如果 spl 不追踪而 cur 追踪则为 1
-            actualS = 1;
-        } else { // 如果 spl 追踪，cur 也追踪
-            if (currentHash.equals(splitHash)) { // 如果追踪相同，则为 1
-                actualS = 1;
-            } else { // 如果追踪不同，则为 2
-                actualS = 2;
+        // 计算 s 的高度：
+        // 1. 如果 currentHash 不为 null，则初始 s 为 1；
+        // 2. 如果 s 与 f 相等且 currentHash 与 splitHash 不相同，则 s 再加 1（此处使用 Objects.equals 做空安全比较）
+        int s = 0;
+        if (currentHash != null) {
+            s ++;
+            if (s == f && !Objects.equals(currentHash, splitHash)) {
+                s++;
             }
         }
 
-        // givenCommit 状态判断
-        if (givenHash == null) { // 如果 giv 不追踪 fileName 直接为 0
-            actualT = 0;
-        } else if ((actualF == 0) && (actualS == 0)) { // 如果 giv 追踪，spl 和 cur 都不追踪，则为 1
-            actualT = 1;
-        } else { // 如果 spl 和 cur 至少有一个在追踪（01，10，11，12）
-            if (givenHash.equals(splitHash)) { // 如果 giv 与 spl 追踪相同，则与 actualF 相同
-                actualT = actualF;
-            } else if (givenHash.equals(currentHash)) { // 如果 giv 与 cur 追踪相同，则与 actualS 相同
-                actualT = actualS;
-            } else { // 如果 giv 追踪的既和 spl 不同，也和 cur 不同，则一定为 2
-                actualT = 2;
+        // 计算 t 的高度：
+        // 1. 如果 givenHash 不为 null，则初始 t 为 1；
+        // 2. 如果 t 与 f 相等且 givenHash 与 splitHash 不相同，则 t 再加 1；
+        // 3. 如果 t 与 s 相等且 givenHash 与 currentHash 不相同，则 t 再加 1。
+        int t = 0;
+        if (givenHash != null) {
+            t ++;
+            if (t == f && !Objects.equals(givenHash, splitHash)) {
+                t++;
+            }
+            if (t == s && !Objects.equals(givenHash, currentHash)) {
+                t++;
             }
         }
 
-        if (t == 3) {
-            // 检查是否是双方都改了但内容不同：1-2-2
-            if (actualF == 1 && actualS == 2 && actualT == 2) {
-                return !currentHash.equals(givenHash);
-            } else {
-                return false;
-            }
-        } else {
-            return (actualF == f && actualS == s && actualT == t);
-        }
+        return String.format("%d%d%d", f, s, t);
     }
-    
+
+
     /**
      * 执行 checkout 操作：将需要检出的文件从 givenCommit 还原到工作区，并添加到暂存区。
      */
     public void doCheckout() {
-        // 调用 checkoutFiles
-        // ...
         for (String fileName : checkoutFiles) {
             Repository.checkout(new String[]{givenCommit.id(), "--", fileName});
             Repository.addFile(fileName);
@@ -228,8 +213,6 @@ public class MergeManager {
      * 执行 remove 操作：将需要移除的文件从版本库和暂存区中删除。
      */
     public void doRemove() {
-        // 调用 removeFiles
-        // ...
         for (String fileName : removeFiles) {
             Repository.remove(fileName);
         }
@@ -239,8 +222,6 @@ public class MergeManager {
      * 处理冲突文件：将冲突文件以特定格式写入工作区并添加到暂存区。
      */
     public void handleConflict() {
-        // 调用 conflictFiles
-        // ...
         for (String fileName : conflictFiles) {
             String curHash = currentCommit.getTrackedFile().get(fileName);
             String givHash = givenCommit.getTrackedFile().get(fileName);
