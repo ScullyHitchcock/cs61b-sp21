@@ -51,7 +51,7 @@ public class Commit implements Serializable {
     }
 
     /**
-     * 传入提交信息 msg，返回指向当前提交的新的 Commit 对象。
+     * 传入提交信息 msg，返回指向当前提交的新的 Commit 对象（子提交）。
      *
      * @param msg 提交信息
      * @return 新的 Commit 对象
@@ -71,6 +71,17 @@ public class Commit implements Serializable {
      */
     public void addParent(String id) {
         parentCommits.add(id);
+    }
+
+    /**
+     * 创建提交 ID。
+     */
+    private void createId() {
+        commitId = Utils.sha1(
+                Utils.serialize(trackedFile),
+                Utils.serialize(parentCommits),
+                message,
+                Utils.serialize(time));
     }
 
     /** 返回当前提交的 ID。 */
@@ -101,14 +112,15 @@ public class Commit implements Serializable {
     /**
      * 解析暂存区域的添加记录和移除记录，更新追踪文件状态。
      *
-     * @param addition 添加记录
+     * @param addition 暂存记录
      * @param removal 移除记录
      */
-    public void updateTrackingFiles(Map<String, String> addition, Set<String> removal) {
+    public void updateTrackingFiles(Map<String, String> addition, Set<String> removal,
+                                    File stagingBlobDir, File blobDir) {
         for (Map.Entry<String, String> entry: addition.entrySet()) {
             String fileName = entry.getKey();
             String fileHash = entry.getValue();
-            trackFile(fileName, fileHash);
+            trackFile(fileName, fileHash, stagingBlobDir, blobDir);
         }
         for (String fileTobeRemoved: removal) {
             untrackFile(fileTobeRemoved);
@@ -122,16 +134,18 @@ public class Commit implements Serializable {
      * @param file 文件名
      * @param fileHash 文件哈希值
      */
-    private void trackFile(String file, String fileHash) {
+    private void trackFile(String file, String fileHash,
+                           File stagingBlobDir, File blobDir) {
         trackedFile.put(file, fileHash);
-        permanentSaveBlob(fileHash);
+        permanentSaveBlob(fileHash, stagingBlobDir, blobDir);
     }
 
     /** 将 STAGING_BLOBS 文件夹中的文件快照复制到 BLOBS 文件夹中。 */
-    private void permanentSaveBlob(String fileHash) {
-        File oldFile = Utils.join(Repository.stagingBlobs(), fileHash);
+    private void permanentSaveBlob(String fileHash,
+                                   File stagingBlobDir, File blobDir) {
+        File oldFile = Utils.join(stagingBlobDir, fileHash);
         String content = Utils.readContentsAsString(oldFile);
-        File newFile = Utils.join(Repository.blobs(), fileHash);
+        File newFile = Utils.join(blobDir, fileHash);
         if (!newFile.exists()) {
             Utils.writeContents(newFile, content);
         }
@@ -153,13 +167,14 @@ public class Commit implements Serializable {
     }
 
     /**
-     * 如果当前提交正在追踪的文件 fileName 没有变化，返回 true。
+     * 如果当前提交正在追踪的文件 fileName 内容与 Dir 的版本一致，返回 true。
      *
+     * @param Dir 文件名
      * @param fileName 文件名
      * @return 是否没有变化
      */
-    public boolean isTrackingSame(String fileName) {
-        String fileHash = Utils.fileHashInCWD(fileName);
+    public boolean isTrackingSameIn(File Dir, String fileName) {
+        String fileHash = Utils.fileHashIn(Dir, fileName);
         if (isTracking(fileName) && fileHash != null) {
             return (fileHash.equals(trackedFile.get(fileName)));
         }
@@ -167,32 +182,22 @@ public class Commit implements Serializable {
     }
 
     /**
-     * 如果当前提交正在追踪的文件 fileName 发生变化，返回 true。
+     * 如果当前提交正在追踪的文件 fileName 内容与 Dir 的版本不同，返回 true。
      *
+     * @param Dir 文件名
      * @param fileName 文件名
-     * @return 是否发生变化
+     * @return 是否没有变化
      */
-    public boolean isTrackingDifferent(String fileName) {
-        return (isTracking(fileName) && !isTrackingSame(fileName));
+    public boolean isTrackingDifferentIn(File Dir, String fileName) {
+        return (isTracking(fileName) && !isTrackingSameIn(Dir, fileName));
     }
 
-    /** 保存当前提交的数据。 */
+    /**
+     * 序列化保存到 commitDir 路径中
+     *
+     * @param commitDir 保存路径
+     */
     public void save(File commitDir) {
         Utils.writeObject(Utils.join(commitDir, commitId), this);
     }
-
-    /** 创建提交 ID。 */
-    private String createId() {
-        commitId = Utils.sha1(
-                Utils.serialize(trackedFile),
-                Utils.serialize(parentCommits),
-                message,
-                Utils.serialize(time));
-        return Utils.sha1(
-                Utils.serialize(trackedFile),
-                Utils.serialize(parentCommits),
-                message,
-                Utils.serialize(time));
-    }
 }
-

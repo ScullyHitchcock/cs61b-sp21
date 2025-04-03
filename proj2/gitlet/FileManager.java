@@ -16,21 +16,39 @@ import java.util.*;
  * - 恢复文件到特定 commit 的状态
  */
 public class FileManager implements Serializable {
+    /** 保存路径 */
     private final File savePath;
+
+    /** 工作目录 */
     private final File workingDir;
+
+    /** 暂存区 blob 文件保存目录 */
     private final File stagingBlobsDir;
+
+    /** blob 文件保存目录 */
     private final File blobsDir;
+
+    /** CommitManager 文件路径 */
     private final File commitManagerPath;
 
-    /* addition 区，以“文件名 -> 文件哈希值”的形式储存特定文件 */
+    /** addition 记录，以“文件名 -> 文件哈希值”的形式记录特定文件 */
     private Map<String, String> addition;
 
-    /* removal 区，以“文件名”的形式储存特定文件 */
+    /** removal 记录，以“文件名”的形式记录特定文件 */
     private Set<String> removal;
 
-    /* 管理区中的所有文件集合，包括工作区的文件和head正在追踪的文件的并集 */
+    /** 管理区中的所有文件集合，包括工作区的文件和head正在追踪的文件的并集 */
     private Set<String> filesInManagement;
 
+    /**
+     * FileManager 构造函数，用于初始化文件管理器的各个路径和暂存区结构。
+     *
+     * @param savePath           FileManager 对象的保存路径（用于序列化保存）
+     * @param workingDir         当前工作目录路径，代表用户项目的根目录
+     * @param stagingBlobsDir    暂存区 blob 文件保存目录（用于记录 add 的文件内容）
+     * @param blobsDir           所有 blob 文件的存储目录（版本库中所有文件快照）
+     * @param commitManagerPath  CommitManager 的序列化文件路径，用于获取当前 HEAD commit
+     */
     public FileManager(File savePath, File workingDir,
                        File stagingBlobsDir, File blobsDir, File commitManagerPath) {
         this.savePath = savePath;
@@ -44,9 +62,7 @@ public class FileManager implements Serializable {
         updateFiles();
     }
 
-    /**
-     * 更新 filesInManagement 获取正在管理的所有文件名列表（当前 HEAD 正在追踪的，和工作区目录下的所有文件名集合）。
-     */
+    /** 更新 filesInManagement 获取正在管理的所有文件名列表（当前 HEAD 正在追踪的，和工作区目录下的所有文件名集合）。*/
     public void updateFiles() {
         Commit head = Repository.callCommitManager(commitManagerPath).getHeadCommit();
         Map<String, String> tracking = head.getTrackedFile();
@@ -62,33 +78,23 @@ public class FileManager implements Serializable {
         filesInManagement.addAll(removal);
     }
 
-    /**
-     * 保存文件管理器。
-     */
+    /** 序列化保存到 savePath 路径中 */
     public void save() {
         Utils.writeObject(savePath, this);
     }
 
-    /**
-     * 获取 addition 变量。
-     *
-     * @return addition 区的文件映射
-     */
+    /** 获取暂存记录 */
     public Map<String, String> getAddition() {
         return addition;
     }
 
-    /**
-     * 获取 removal 变量。
-     *
-     * @return removal 区的文件映射
-     */
+    /** 获取移除记录 */
     public Set<String> getRemoval() {
         return removal;
     }
 
     /**
-     * 将文件添加到 addition 区，并在 STAGING_BLOBS 中写入文件内容。
+     * 将 workingDir 中的文件添加到 addition 记录中，并在 stagingBlobsDir 中写入文件内容。
      *
      * @param fileName 文件名
      */
@@ -100,7 +106,7 @@ public class FileManager implements Serializable {
     }
 
     /**
-     * 将文件从 addition 中移除（无论在不在）。
+     * 将文件从 addition 记录中移除（无论在不在）。
      *
      * @param fileName 文件名
      */
@@ -109,7 +115,7 @@ public class FileManager implements Serializable {
     }
 
     /**
-     * 将文件标记为 removal，以准备在下一次 commit 时取消追踪。
+     * 将文件添加到 removal 记录中，以准备在下一次 commit 时取消追踪。
      *
      * @param fileName 文件名
      */
@@ -118,7 +124,7 @@ public class FileManager implements Serializable {
     }
 
     /**
-     * 将文件从 removal 中移除（无论在不在）。
+     * 将文件从 removal 记录中移除（无论在不在）。
      *
      * @param fileName 文件名
      */
@@ -127,10 +133,10 @@ public class FileManager implements Serializable {
     }
 
     /**
-     * 如果文件在工作目录中，返回 true。
+     * 如果文件在工作目录 workingDir 中，返回 true。
      *
      * @param fileName 文件名
-     * @return 是否存在于工作目录
+     * @return true or false
      */
     public boolean isInCWD(String fileName) {
         return Utils.join(workingDir, fileName).exists();
@@ -194,8 +200,9 @@ public class FileManager implements Serializable {
         if (isNotTracking(commit, fileName)) {
             return false;
         }
-        String fileHash = Utils.fileHashInCWD(fileName);
-        return (!isStagingInAdd(fileName) && commit.isTrackingDifferent(fileName))
+        String fileHash = Utils.fileHashIn(workingDir, fileName);
+        return (!isStagingInAdd(fileName)
+                && commit.isTrackingDifferentIn(workingDir, fileName))
             || (isStagingInAdd(fileName) && !addition.get(fileName).equals(fileHash));
     }
 
@@ -217,9 +224,7 @@ public class FileManager implements Serializable {
             || (isStagingInRm(fileName));
     }
 
-    /**
-     * 清空 staging 区域。
-     */
+    /** 清空 stagingBlobsDir 目录下的文件，以及 addition 和 removal 的记录 */
     public void clearStageArea() {
         addition = new HashMap<>();
         removal = new HashSet<>();
@@ -235,14 +240,14 @@ public class FileManager implements Serializable {
         Map<String, String> branchTrackingFiles = commit.getTrackedFile();
         for (String fileName : branchTrackingFiles.keySet()) {
             // 只要工作区的文件与追踪的版本不同，或追踪的文件不在工作区中，都进行 checkout
-            if (!commit.isTrackingSame(fileName)) {
+            if (!commit.isTrackingSameIn(workingDir, fileName)) {
                 checkout(commit, fileName);
             }
         }
     }
 
     /**
-     * 在工作区中创建或覆盖 commit 所追踪的内容。
+     * 在工作区中创建或覆盖 commit 所追踪的文件。
      *
      * @param commit 当前 commit
      * @param fileName 文件名
@@ -321,6 +326,12 @@ public class FileManager implements Serializable {
         return untrackedFiles;
     }
 
+    /**
+     * 从远程 FileManager 的 blobs 目录中拉取指定 blob 文件，如果本地尚未存在该 blob 则保存。
+     *
+     * @param remoteFM 远程 FileManager 对象，提供 blob 文件的来源
+     * @param blobName blob 文件名（即文件哈希值）
+     */
     public void fetchBlobFrom(FileManager remoteFM, String blobName) {
         File oldFile = Utils.join(remoteFM.blobsDir, blobName);
         if (oldFile.exists()) {

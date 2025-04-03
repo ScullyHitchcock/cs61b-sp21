@@ -5,6 +5,9 @@
 ## Classes and Data Structures
 
 ### Class Commit
+* 表示一次提交快照，记录文件状态和提交元信息。
+* 包括提交信息、时间、父提交、所追踪文件以及提交 ID。
+* 支持生成子提交、更新追踪文件、判断文件状态变化等功能。
 #### 实例变量
 1. String message：提交信息。
 2. Instant time：提交时间。

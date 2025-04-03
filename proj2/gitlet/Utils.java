@@ -323,16 +323,14 @@ class Utils {
     }
 
     /**
-     * Computes the SHA-1 hash for a file in the current working directory (CWD).
-     * If the file does not exist, returns null.
+     * 计算指定目录中某个文件的哈希值。
      *
-     * @param fileName The name of the file in the current working directory
-     *                 whose hash is to be computed.
-     * @return The SHA-1 hash of the file's name and contents if the file
-     *                 exists; otherwise, returns null.
+     * @param dir      包含目标文件的目录
+     * @param fileName 目标文件的名称
+     * @return         该文件名和内容连接后的 SHA-1 哈希值；如果文件不存在，则返回 null
      */
-    static String fileHashInCWD(String fileName) {
-        File file = join(Repository.cwd(), fileName);
+    static String fileHashIn(File dir, String fileName) {
+        File file = join(dir, fileName);
         if (!file.exists()) {
             return null;
         }

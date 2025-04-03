@@ -17,42 +17,28 @@ import static gitlet.Utils.*;
 public class Repository {
 
     /** The current working directory. */
-    private static File CWD = new File(System.getProperty("user.dir"));
-    /** .gitlet 结构 */
-    private static File GITLET_DIR = join(CWD, ".gitlet");
-    /** 暂存文件快照 */
-    private static File STAGING_BLOBS = join(GITLET_DIR, "staging");
-    /** 永久文件快照 */
-    private static File BLOBS = join(GITLET_DIR, "blobs");
-    /** commit 对象 */
-    private static File COMMITS = join(GITLET_DIR, "commits");
-    /** commit管理器和文件管理器 */
-    private static File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
-    private static File FILE_MANAGER = join(GITLET_DIR, "fileManager");
+    private static final File CWD = new File(System.getProperty("user.dir"));
 
-    /** 仅供测试用 */
-    public static void refreshCWDForUnitTest() {
-        CWD = new File(System.getProperty("user.dir"));
-        GITLET_DIR = join(CWD, ".gitlet");
-        STAGING_BLOBS = join(GITLET_DIR, "staging");
-        BLOBS = join(GITLET_DIR, "blobs");
-        COMMITS = join(GITLET_DIR, "commits");
-        COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
-        FILE_MANAGER = join(GITLET_DIR, "fileManager");
-    }
+    /** .gitlet 目录 */
+    private static final File GITLET_DIR = join(CWD, ".gitlet");
 
-    public static File cwd() {
-        return CWD;
-    }
+    /** 暂存文件快照目录 */
+    private static final File STAGING_BLOBS = join(GITLET_DIR, "staging");
+
+    /** 永久文件快照目录 */
+    private static final File BLOBS = join(GITLET_DIR, "blobs");
+
+    /** commit 对象保存目录 */
+    private static final File COMMITS = join(GITLET_DIR, "commits");
+
+    /** commit 管理器和文件管理器保存路径 */
+    private static final File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
+    private static final File FILE_MANAGER = join(GITLET_DIR, "fileManager");
+
     public static File gitletDir() {
         return GITLET_DIR;
     }
-    public static File stagingBlobs() {
-        return STAGING_BLOBS;
-    }
-    public static File blobs() {
-        return BLOBS;
-    }
+
     /**
      * 初始化版本库目录和初始提交。
      * 创建 .gitlet 目录及其子目录，并生成初始提交。
@@ -68,12 +54,10 @@ public class Repository {
         STAGING_BLOBS.mkdir();
         BLOBS.mkdir();
         // 传入工作区域各文件目录的路径，创建 CommitManager，保存
-        CommitManager manager = new CommitManager(COMMIT_MANAGER, COMMITS);
-        manager.save();
+        new CommitManager(COMMIT_MANAGER, COMMITS).save();
         // 传入工作区域各文件目录的路径，创建 fileManager，保存
-        FileManager fileManager = new FileManager(FILE_MANAGER, CWD,
-                STAGING_BLOBS, BLOBS, COMMIT_MANAGER);
-        fileManager.save();
+        new FileManager(FILE_MANAGER, CWD,
+                STAGING_BLOBS, BLOBS, COMMIT_MANAGER).save();
     }
 
     /**
@@ -116,7 +100,7 @@ public class Repository {
         if (!fileManager.isInCWD(fileName)) {
             throw error("File does not exist.");
         }
-        if (headCommit.isTrackingSame(fileName)) {
+        if (headCommit.isTrackingSameIn(CWD, fileName)) {
             fileManager.removeFromAddition(fileName);
         } else {
             fileManager.addToAddition(fileName);
@@ -178,7 +162,7 @@ public class Repository {
             Commit branchCommit = commitManager.getBranchCommit(branch);
             newCommit.addParent(branchCommit.id());
         }
-        newCommit.updateTrackingFiles(addition, removal);
+        newCommit.updateTrackingFiles(addition, removal, STAGING_BLOBS, BLOBS);
 
         commitManager.addCommit(newCommit);
         commitManager.save();
@@ -227,13 +211,14 @@ public class Repository {
         Instant time = commit.getTime();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy Z",
                 Locale.US).withZone(ZoneId.systemDefault());
-        String formattedTime = formatter.format(time);
-        String commitMsg = commit.getMessage();
-        String commitId = commit.id();
-        List<String> parents = commit.getParentIds();
+        String formattedTime = formatter.format(time); // 时间
+        String commitMsg = commit.getMessage(); // 信息
+        String commitId = commit.id(); // id
+        List<String> parents = commit.getParentIds(); // 父提交对象列表
 
         message("===");
         message("commit %s", commitId);
+        // 如果 commit 是 merge 后的 commit，则需要打印它的两个 parent id 缩写
         if (parents.size() > 1) {
             String abbrP1 = parents.get(0).substring(0, 7);
             String abbrP2 = parents.get(1).substring(0, 7);
@@ -461,7 +446,7 @@ public class Repository {
         // 2 checkout
         fileManager.checkout(commit);
         // 3 重新设置 headCommit
-        commitManager.resetHeadCommit(commitId);
+        commitManager.setHeadCommit(commitId);
         // 4 清空暂存区
         fileManager.clearStageArea();
         // 5 保存
@@ -540,21 +525,33 @@ public class Repository {
         }
     }
 
-    /** 添加远程仓库 */
+    /**
+     * 添加一个远程仓库。
+     * 该方法会将远程仓库的名称和路径记录到本地 CommitManager 中。
+     * 若指定名称的远程仓库已存在，则抛出异常。
+     *
+     * @param remoteName     远程仓库名称（本地引用名）
+     * @param remoteAddress  远程仓库的根路径（包含 .gitlet 目录）
+     */
     public static void addRemote(String remoteName, String remoteAddress) {
         // 检查是否已经存在 remoteName，存在则报错
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
-        if (commitManager.getRemoteRepos().containsKey(remoteName)) {
+        if (commitManager.containsRemoteRepo(remoteName)) {
             throw error("A remote with that name already exists.");
         }
 
-        // 打开 commitManager，储存远程仓库信息：仓库名和仓库的地址（仓库的 CommitManager 地址）
+        // 打开 commitManager，记录远程仓库信息：仓库名和仓库的地址
         File remoteGitletDir = new File(remoteAddress);
         commitManager.addRemoteRepo(remoteName, remoteGitletDir);
         commitManager.save();
     }
 
-    /** 移除远程仓库 */
+    /**
+     * 删除远程仓库记录。
+     * 如果指定的远程仓库不存在，则抛出异常。
+     *
+     * @param remoteName 要删除的远程仓库名称
+     */
     public static void rmRemote(String remoteName) {
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         if (!commitManager.containsRemoteRepo(remoteName)) {
@@ -564,8 +561,17 @@ public class Repository {
         commitManager.save();
     }
 
+    /**
+     * 将当前分支的提交推送到远程仓库的指定分支。
+     * 推送前会检查远程分支是否为当前提交的祖先，以确保推送安全。
+     * 如果远程分支落后于本地但不是其祖先，将拒绝推送并提示需要先拉取（pull）。
+     * 若远程分支不存在，则自动创建。
+     *
+     * @param remoteName        远程仓库名称
+     * @param remoteBranchName  远程仓库中的分支名称
+     */
     public static void push(String remoteName, String remoteBranchName) {
-        // 打开远程仓库和本地仓库各自的 commitManager
+        // 打开远程仓库和本地仓库各自的 commitManager，localCM 和 remoteCM
         CommitManager localCM = callCommitManager(COMMIT_MANAGER);
         File remoteGitletDir = localCM.getRemoteRepos().get(remoteName);
         if (!remoteGitletDir.exists()) {
@@ -580,29 +586,37 @@ public class Repository {
             remoteCM.changeHeadTo(remoteBranchName);
         }
 
-        // 查询 remoteCM 和 localCM 各自的 HEAD commit 的 split point
+        // 查询 remoteCM 和 localCM 各自的 HEAD commit 的 splitPoint
         Commit remoteHead = remoteCM.getHeadCommit();
         Commit localHead = localCM.getHeadCommit();
         String rmId = remoteHead.id();
         String lcId = localHead.id();
         Commit splitPoint = localCM.findSplitPoint(remoteCM, rmId, lcId);
 
-        // 如果 split point 不是 remoteCM 的 HEAD commit，报错
+        // 如果 splitPoint 不是 remoteCM 的 HEAD commit，报错
         if (!remoteHead.id().equals(splitPoint.id())) {
             throw error("Please pull down remote changes before pushing.");
         }
         // 从 localCM 的 HEAD commit 开始，直到 split point（不包括），执行 remoteCM.addCommit(commit)
-        // 因为 CommitManager 中的 commits 是集合形式，无需考虑加入顺序，只需在最后设置 HEAD 指向最新 Commit
+        // 因为 CommitManager 中的 commits 是集合形式，无需考虑加入顺序，只需在最后重置 HEAD 指向最新 Commit
         Commit cur = localHead;
         while (!cur.id().equals(splitPoint.id())) {
             remoteCM.addCommit(cur);
             String parentId = cur.getParentIds().get(0);
             cur = localCM.getCommit(parentId);
         }
-        remoteCM.resetHeadCommit(localHead.id());
+        remoteCM.setHeadCommit(localHead.id());
         remoteCM.save();
     }
 
+    /**
+     * 从远程仓库拉取指定分支的提交记录和相关 blob 文件。
+     * 拉取后，本地将创建一个名为 remoteName/remoteBranchName 的分支，
+     * 其 HEAD 指向远程分支最新的提交。
+     *
+     * @param remoteName        远程仓库名称
+     * @param remoteBranchName  远程分支名称
+     */
     public static void fetch(String remoteName, String remoteBranchName) {
         // 打开远程仓库和本地仓库各自的 commitManager 和 fileManager
         CommitManager localCM = callCommitManager(COMMIT_MANAGER);
@@ -648,7 +662,7 @@ public class Repository {
             cur = remoteCM.getCommit(parentId);
         }
         // 最后设置 HEAD 指向最新 commit
-        localCM.resetHeadCommit(remoteBranchCommit.id());
+        localCM.setHeadCommit(remoteBranchCommit.id());
 
         // 复原 localCM 分支 HEAD 状态
         localCM.changeHeadTo(orinBranch);
@@ -656,6 +670,12 @@ public class Repository {
         localFM.save();
     }
 
+    /**
+     * 从远程仓库拉取指定分支（fetch），然后将其合并到当前分支（merge）。
+     *
+     * @param remoteName        远程仓库名称
+     * @param remoteBranchName  远程分支名称
+     */
     public static void pull(String remoteName, String remoteBranchName) {
         fetch(remoteName, remoteBranchName);
         merge(remoteName + "/" + remoteBranchName);

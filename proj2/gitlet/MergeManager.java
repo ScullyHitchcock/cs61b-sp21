@@ -28,24 +28,35 @@ import java.util.Set;
  */
 
 public class MergeManager {
-    private Commit splitPoint;
-    private Commit currentCommit;
-    private Commit givenCommit;
-    private Set<String> untrackedFiles;
-    private Set<String> checkoutFiles;
-    private Set<String> removeFiles;
-    private Set<String> conflictFiles;
-    private File workingDir;
-    private File blobDir;
 
-    /**
-     * 构造一个 MergeManager 实例，初始化提交对象和文件集合。
-     *
-     * @param splitPoint 分裂点提交
-     * @param currentCommit 当前分支的提交
-     * @param givenCommit 被合并分支的提交
-     * @param untrackedFiles 当前工作区中的未追踪文件集合
-     */
+    /** 当前分支与目标分支的最近公共祖先提交（分裂点） */
+    private final Commit splitPoint;
+
+    /** 当前分支的最新提交 */
+    private final Commit currentCommit;
+
+    /** 被合并进当前分支的提交（目标分支的最新提交） */
+    private final Commit givenCommit;
+
+    /** 当前工作目录中未被当前分支追踪的文件集合 */
+    private final Set<String> untrackedFiles;
+
+    /** 合并过程中需要 checkout（还原）到工作区并暂存的文件集合 */
+    private final Set<String> checkoutFiles;
+
+    /** 合并过程中需要从版本控制中移除的文件集合 */
+    private final Set<String> removeFiles;
+
+    /** 合并过程中发生冲突的文件集合 */
+    private final Set<String> conflictFiles;
+
+    /** 当前 Gitlet 仓库的工作目录 */
+    private final File workingDir;
+
+    /** 所有 blob 文件的存储目录（用于获取文件内容） */
+    private final File blobDir;
+
+    /** 构造 MergeManager 对象 */
     public MergeManager(Commit splitPoint,
                         Commit currentCommit,
                         Commit givenCommit,
@@ -63,7 +74,6 @@ public class MergeManager {
         this.blobDir = blobDir;
     }
 
-    /* 获取三个 Commit 对象正在追踪的所有文件集合 */
     /**
      * 获取 split、current、given 三个提交中所有被追踪的文件集合。
      *
@@ -80,7 +90,6 @@ public class MergeManager {
         return allFiles;
     }
 
-    /* 对三个 commit 对象追踪的所有文件进行 merge 操作，全部文件操作成功返回 true，否则 false */
     /**
      * 对所有相关文件执行合并操作。
      *
@@ -96,7 +105,6 @@ public class MergeManager {
         return true;
     }
 
-    /* 对单个文件进行 merge，如果出现未追踪文件即将被覆盖，返回 false，否则 true */
     /**
      * 对单个文件执行合并判断与操作。
      *
