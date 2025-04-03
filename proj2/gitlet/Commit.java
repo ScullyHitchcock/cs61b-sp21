@@ -169,7 +169,7 @@ public class Commit implements Serializable {
     /**
      * 如果当前提交正在追踪的文件 fileName 内容与 Dir 的版本一致，返回 true。
      *
-     * @param dir 文件名
+     * @param dir 需要检查的目录
      * @param fileName 文件名
      * @return 是否没有变化
      */
@@ -184,7 +184,7 @@ public class Commit implements Serializable {
     /**
      * 如果当前提交正在追踪的文件 fileName 内容与 Dir 的版本不同，返回 true。
      *
-     * @param dir 文件名
+     * @param dir 需要检查的目录
      * @param fileName 文件名
      * @return 是否没有变化
      */
