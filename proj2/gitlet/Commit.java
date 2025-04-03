@@ -169,12 +169,12 @@ public class Commit implements Serializable {
     /**
      * 如果当前提交正在追踪的文件 fileName 内容与 Dir 的版本一致，返回 true。
      *
-     * @param Dir 文件名
+     * @param dir 文件名
      * @param fileName 文件名
      * @return 是否没有变化
      */
-    public boolean isTrackingSameIn(File Dir, String fileName) {
-        String fileHash = Utils.fileHashIn(Dir, fileName);
+    public boolean isTrackingSameIn(File dir, String fileName) {
+        String fileHash = Utils.fileHashIn(dir, fileName);
         if (isTracking(fileName) && fileHash != null) {
             return (fileHash.equals(trackedFile.get(fileName)));
         }
@@ -184,12 +184,12 @@ public class Commit implements Serializable {
     /**
      * 如果当前提交正在追踪的文件 fileName 内容与 Dir 的版本不同，返回 true。
      *
-     * @param Dir 文件名
+     * @param dir 文件名
      * @param fileName 文件名
      * @return 是否没有变化
      */
-    public boolean isTrackingDifferentIn(File Dir, String fileName) {
-        return (isTracking(fileName) && !isTrackingSameIn(Dir, fileName));
+    public boolean isTrackingDifferentIn(File dir, String fileName) {
+        return (isTracking(fileName) && !isTrackingSameIn(dir, fileName));
     }
 
     /**
