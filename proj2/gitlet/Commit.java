@@ -91,7 +91,7 @@ public class Commit implements Serializable {
 
     /** 返回所有父提交的 ID 列表。 */
     public List<String> getParentIds() {
-        return parentCommits;
+        return new ArrayList<>(parentCommits); // 返回副本
     }
 
     /** 返回提交信息。 */
@@ -106,7 +106,7 @@ public class Commit implements Serializable {
 
     /** 返回当前提交所追踪的文件数据。 */
     public TreeMap<String, String> getTrackedFile() {
-        return trackedFile;
+        return new TreeMap<>(trackedFile); // 返回副本
     }
 
     /**

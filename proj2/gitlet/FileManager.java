@@ -85,12 +85,12 @@ public class FileManager implements Serializable {
 
     /** 获取暂存记录 */
     public Map<String, String> getAddition() {
-        return addition;
+        return new HashMap<>(addition);
     }
 
     /** 获取移除记录 */
     public Set<String> getRemoval() {
-        return removal;
+        return new HashSet<>(removal);
     }
 
     /**

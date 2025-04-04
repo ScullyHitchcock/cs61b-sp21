@@ -68,7 +68,7 @@ public class CommitManager implements Serializable {
 
     /** 以 Map 形式返回所有 commit id 和 commit msg */
     public HashMap<String, String> getAllCommits() {
-        return commits;
+        return new HashMap<>(commits);
     }
 
     /** 切换当前 HEAD 指针到指定分支上 */
@@ -272,6 +272,6 @@ public class CommitManager implements Serializable {
 
     /** 返回远程仓库 Map */
     public HashMap<String, File> getRemoteRepos() {
-        return remoteRepos;
+        return new HashMap<>(remoteRepos);
     }
 }
