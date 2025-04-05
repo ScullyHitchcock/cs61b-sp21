@@ -29,20 +29,20 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     private Collection<Node>[] table;
     // You should probably define some more!
     private final double maxLoadFactor;
-    private int tableSize;
-    private int nodeNum;
+    private int numOfBucket;
+    private int numOfNode;
 
     /** Constructors */
     public MyHashMap() {
         maxLoadFactor = 0.75;
-        tableSize = 16;
-        table = createTable(tableSize);
+        numOfBucket = 16;
+        table = createTable(numOfBucket);
     }
 
     public MyHashMap(int initialSize) {
-        tableSize = initialSize;
+        numOfBucket = initialSize;
         maxLoadFactor = 0.75;
-        table = createTable(tableSize);
+        table = createTable(numOfBucket);
     }
 
     /**
@@ -53,9 +53,9 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * @param maxLoad maximum load factor
      */
     public MyHashMap(int initialSize, double maxLoad) {
-        tableSize = initialSize;
+        numOfBucket = initialSize;
         maxLoadFactor = maxLoad;
-        table = createTable(tableSize);
+        table = createTable(numOfBucket);
     }
 
     /**
@@ -111,9 +111,9 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     // Your code won't compile until you do so!
     @Override
     public void clear() {
-        tableSize = 16;
-        nodeNum = 0;
-        table = createTable(tableSize);
+        numOfBucket = 16;
+        numOfNode = 0;
+        table = createTable(numOfBucket);
     }
 
     private Node getNode(K key) {
@@ -141,7 +141,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
     @Override
     public int size() {
-        return nodeNum;
+        return numOfNode;
     }
 
     @Override
@@ -161,7 +161,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
         // 否则将 newNode 加入到 bucket 中，更新 nodeNum
         table[index].add(newNode);
-        nodeNum ++;
+        numOfNode++;
         // 如果此时 loadFactor 到达阈值，则调用 resize()
         double lf = loadFactor();
         if (lf > maxLoadFactor) {
@@ -215,7 +215,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
         @Override
         public boolean hasNext() {
-            return index < tableSize;
+            return index < numOfBucket;
         }
 
         @Override
@@ -233,11 +233,11 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
                 if (bucketIterator.hasNext()) {
                     break;
                 }
-                if (index >= tableSize) {
+                if (index >= numOfBucket) {
                     break;
                 }
                 index++;
-                if (index < tableSize) {
+                if (index < numOfBucket) {
                     bucketIterator = table[index].iterator();
                 }
             }
@@ -245,12 +245,12 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     private double loadFactor() {
-        return (double) nodeNum / tableSize;
+        return (double) numOfNode / numOfBucket;
     }
 
     private void resize() {
-        tableSize *= 2;
-        Collection<Node>[] newTable = createTable(tableSize);
+        numOfBucket *= 2;
+        Collection<Node>[] newTable = createTable(numOfBucket);
         for (Collection<Node> bucket : table) {
             for (Node node : bucket) {
                 newTable[indexOf(node.key)].add(node);
@@ -260,6 +260,6 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     private int indexOf(K key) {
-        return Math.floorMod(key.hashCode(), tableSize);
+        return Math.floorMod(key.hashCode(), numOfBucket);
     }
 }
