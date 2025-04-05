@@ -215,14 +215,11 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
         @Override
         public boolean hasNext() {
-            return index < tableSize || bucketIterator.hasNext();
+            return index < tableSize;
         }
 
         @Override
         public K next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
             K res = getCur();
             moveToNext();
             return res;
