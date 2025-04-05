@@ -228,6 +228,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         private K getCur() {
             return bucketIterator.next().key;
         }
+
         private void moveToNext() {
             while (index < numOfBucket && !bucketIterator.hasNext()) {
                 index++;
