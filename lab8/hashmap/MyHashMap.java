@@ -229,13 +229,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
             return bucketIterator.next().key;
         }
         private void moveToNext() {
-            while (true) {
-                if (bucketIterator.hasNext()) {
-                    break;
-                }
-                if (index >= numOfBucket) {
-                    break;
-                }
+            while (index < numOfBucket && !bucketIterator.hasNext()) {
                 index++;
                 if (index < numOfBucket) {
                     bucketIterator = table[index].iterator();
