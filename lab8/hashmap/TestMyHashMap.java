@@ -158,4 +158,21 @@ public class TestMyHashMap {
         assertEquals(345, studentIDs.get("evil alan").intValue());
         assertEquals(studentIDs.get("evil alan"), studentIDs.get("alan"));
     }
+
+    @Test
+    public void smallSanityKeySetTest() {
+        smallSanityKeySetTest(new MyHashMap<>());
+    }
+
+    public static void smallSanityKeySetTest(MyHashMap<String, Integer> b) {
+        HashSet<String> values = new HashSet<String>();
+        for (int i = 0; i < 10; i++) {
+            b.put("hi" + i, 1);
+            values.add("hi" + i);
+        }
+        assertEquals(10, b.size()); //keys are there
+        Set<String> keySet = b.keySet();
+        assertTrue(values.containsAll(keySet));
+        assertTrue(keySet.containsAll(values));
+    }
 }
