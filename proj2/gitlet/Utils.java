@@ -306,14 +306,13 @@ class Utils {
         System.out.println();
     }
 
-    static void createFile(File file) {
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            throw error("创建文件时发生错误：%s", e.getMessage());
-        }
-    }
-
+    /**
+     * Deletes all plain files in the specified directory.
+     *
+     * @param dir The directory whose plain files are to be deleted. If the directory
+     *            contains no plain files or does not denote a valid directory, no
+     *            operation will be performed.
+     */
     static void clean(File dir) {
         List<String> files = plainFilenamesIn(dir);
         if (files != null) {
@@ -323,26 +322,19 @@ class Utils {
         }
     }
 
-    static String fileHashInCWD(String fileName) {
-        File file = join(Repository.CWD, fileName);
-        if (!file.exists()) return null;
+    /**
+     * 计算指定目录中某个文件的哈希值。
+     *
+     * @param dir      包含目标文件的目录
+     * @param fileName 目标文件的名称
+     * @return         该文件名和内容连接后的 SHA-1 哈希值；如果文件不存在，则返回 null
+     */
+    static String fileHashIn(File dir, String fileName) {
+        File file = join(dir, fileName);
+        if (!file.exists()) {
+            return null;
+        }
         String content = readContentsAsString(file);
         return sha1(fileName, content);
-    }
-
-    /* 在文件夹 dir 中创建文件 fileName，写入内容 content，如果文件已存在，则覆盖原内容 */
-    static void createOrOverride(File dir, String fileName, String newContent) {
-        File file = join(dir, fileName);
-        if (!plainFilenamesIn(dir).contains(fileName)) {
-            createFile(file);
-        }
-        writeContents(file, newContent);
-    }
-
-    /* 在文件夹 dir 中删除文件 fileName */
-    static void deleteFileFrom(File dir, String fileName) {
-        if (join(dir, fileName).exists()) {
-            join(dir, fileName).delete();
-        }
     }
 }
