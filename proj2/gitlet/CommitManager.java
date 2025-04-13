@@ -21,6 +21,9 @@ public class CommitManager implements Serializable {
     /** 存放 Commit id 与 Commit msg 的映射 */
     private final HashMap<String, String> commits;
 
+    /** 存放 Commit id 的字典树，用于前缀模糊查找 */
+    private final TrieSet commitTries;
+
     /** HEAD 指针，指向当前活跃的分支名，默认为 master */
     private String headBranchName;
 
@@ -38,6 +41,7 @@ public class CommitManager implements Serializable {
         commits = new HashMap<>();
         branches = new HashMap<>();
         remoteRepos = new HashMap<>();
+        commitTries = new TrieSet();
         headBranchName = "master";
         Commit initCommit = Commit.createInitCommit();
         addCommit(initCommit);
@@ -104,20 +108,15 @@ public class CommitManager implements Serializable {
      * @return 查找成功返回 Commit 对象，失败返回 null
      */
     public Commit getCommit(String id) {
-        String matchId = null;
+        String matchId;
         if (commits.containsKey(id)) {
             matchId = id;
         } else { // 模糊查找
-            int matchCount = 0;
-            for (String commitId : commits.keySet()) {
-                if (commitId.startsWith(id)) {
-                    matchCount += 1;
-                    matchId = commitId;
-                }
-            }
-            if (matchCount != 1) {
+            List<String> matches = commitTries.startsWith(id);
+            if (matches.size() != 1) {
                 return null;
             }
+            matchId = matches.get(0);
         }
         File commitFile = Utils.join(commitDir, matchId);
         if (!commitFile.exists()) {
@@ -141,6 +140,7 @@ public class CommitManager implements Serializable {
         if (!commits.containsKey(id)) {
             String commitMessage = commit.getMessage();
             commits.put(id, commitMessage);
+            commitTries.add(id);
             setHeadCommit(id);
             commit.save(commitDir);
         }

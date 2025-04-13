@@ -150,6 +150,7 @@
 - 初始化管理器：
   - 构造函数创建初始提交（`initCommit`），建立主分支 `master`，并将其设为 `HEAD`。
   - 初始化 `commits`（`commitId` → `message`）、`branches`（分支名 → `commitId`）和 `remoteRepos`（远程名 → 路径）等结构。
+  - 初始化 `commitTries`，作为基于 Trie 的前缀索引结构，用于加速模糊 ID 匹配操作。
 
 - 提交与持久化：
   - `addCommit()` 方法会添加提交记录并持久化保存到 `commitDir`，同时更新当前 `HEAD` 指向的分支。
@@ -174,10 +175,31 @@
 - `savePath`：该对象的持久化路径（通常是 `.gitlet/commitManager`）
 - `commitDir`：所有提交对象的存储目录
 - `commits`：提交 `ID` 到信息的映射（用于日志、查找等）
+- `commitTries`：TrieSet 结构，存储所有提交 ID，用于支持前缀模糊匹配操作。
 - `branches`：分支名 → 最新提交 `ID` 的映射
 - `headBranchName`：当前活跃分支名
 - `remoteRepos`：远程仓库名 → 远程路径的映射
 
+
+
+# TrieSet
+
+## 设计思路
+
+`TrieSet` 是一个自定义的基于前缀树（`Trie`）的集合类，专门用于高效地支持字符串集合的“模糊前缀匹配”。相较于 `HashMap` 的线性遍历方式，`Trie` 能在 O(k) 时间内完成前缀查找（k 为前缀长度），在 Gitlet 项目中被用于 commit id 的模糊匹配。该类实现中，每个 `Trie` 节点表示一个字符，路径从根节点出发，形成一个字符串。叶子节点的 `isEnd` 用于标记完整字符串。
+
+## 实现逻辑
+
+- `add(word)`：将字符串按字符依次插入 Trie，若路径中不存在某字符，则新建 TrieNode。
+- `contains(word)`：逐字符查找是否存在该完整字符串（并以 isEnd 为终止判断）。
+- `startsWith(prefix)`：查找所有以指定前缀开头的字符串，借助 DFS 深度遍历。
+- `dfs(prefix, node, result)`：递归辅助方法，用于从某个节点开始收集所有后缀路径。
+
+## 主要字段
+- `TrieNode root`：Trie 树的根节点，所有插入路径从此开始。
+  - 每个 TrieNode：
+    - `Map<Character, TrieNode> children`：当前节点的所有子节点（按字符分）。
+    - `boolean isEnd`：是否为某个完整字符串的终点。
 
 
 # FileManager
@@ -330,7 +352,7 @@
 
 # 辅助类与调试支持
 
-## `GitletException`
+## GitletException
 
 `GitletException` 是 `Gitlet` 项目中所有自定义运行时错误的基类，用于统一处理用户操作中的异常情形，并提供清晰的错误提示。
 
@@ -348,7 +370,7 @@
 
 该类常与 `Utils.error()` 方法配合使用，用于快速抛出带格式化提示的错误异常。
 
-## `DumpObj`
+## DumpObj
 
 `DumpObj` 是一个独立的调试工具类，用于将 `Gitlet` 中序列化存储的对象（如 `CommitManager`、`FileManager` 等）从磁盘读取出来并打印其内容。
 
@@ -363,7 +385,7 @@
 - 要求对象实现 `Dumpable` 接口，并具备 `dump()` 方法；
 - 将输出打印到标准输出，供开发者调试观察。
 
-## `Dumpable`
+## Dumpable
 
 `Dumpable` 是 `Gitlet` 项目中所有可被调试打印的对象所需实现的接口。
 

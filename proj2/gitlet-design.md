@@ -134,7 +134,7 @@ This class is inspired by Git’s immutable commit object. It is designed to be 
 - `commitId`: SHA1 hash of serialized content
 
 
-# `CommitManager`
+# CommitManager
 
 ## Design Philosophy
 
@@ -146,7 +146,8 @@ It also supports managing remote repository references (for `fetch`/`push`).
 
 - Initialization:
     - Creates the initial commit and sets `master` as `HEAD`.
-    - Initializes commits (ID → message), branches (name → commit ID), and `remoteRepos` (name → path).
+    - Initializes `commits` (ID → message), `branches` (name → commit ID), and `remoteRepos` (name → path).
+    - Initializes `commitTries`, a TrieSet structure serving as a prefix-based index to efficiently support fuzzy (prefix) matching of commit IDs.
 
 - Commit and Persistence:
     - `addCommit()` adds a commit and saves it, updating the current branch.
@@ -171,12 +172,38 @@ It also supports managing remote repository references (for `fetch`/`push`).
 - `savePath`: Path to save this object (usually `.gitlet/commitManager`)
 - `commitDir`: Directory where commits are saved
 - `commits`: commit ID → message map
+- `commitTries`：A TrieSet structure that stores all commit IDs and supports prefix-based matching
 - `branches`: branch name → commit ID map
 - `headBranchName`: current branch name
 - `remoteRepos`: remote name → path map
 
 
-# `FileManager`
+# TrieSet
+
+## Design Philosophy
+
+`TrieSet` is a custom collection class based on a prefix tree (Trie), specifically designed for efficient fuzzy prefix matching of string sets.
+Compared to linear scanning with a `HashMap`, a Trie enables prefix lookups in O(k) time, where k is the length of the prefix.
+In the Gitlet project, this structure is used to accelerate fuzzy commit ID matching.
+Each Trie node represents a single character, and a complete string is formed by traversing from the root to a terminal node.
+The `isEnd` flag indicates whether a node marks the end of a valid string.
+
+## Implementation Details
+
+- `add(word)`: Inserts a string character by character into the Trie. Creates a new `TrieNode` if a character path doesn't exist.
+- `contains(word)`: Checks whether a complete string exists in the Trie, confirmed by reaching a node with `isEnd = true`.
+- `startsWith(prefix)`: Finds all strings with the given prefix using a depth-first search (DFS).
+- `dfs(prefix, node, result)`: Recursive helper function to gather all suffixes from a given Trie node.
+
+## Key Fields
+
+- `TrieNode root`: The root node of the Trie from which all insertions start.
+  - Each `TrieNode` includes:
+    - `Map<Character, TrieNode> children`: The mapping from character to child nodes.
+    - `boolean isEnd`: Whether this node represents the end of a valid string.
+
+
+# FileManager
 
 ## Design Philosophy
 
@@ -221,7 +248,7 @@ The staging area is split into `addition` and `removal` maps. Blob snapshots are
 - `filesInManagement`: files in `CWD`, staging, and current commit
 
 
-# `MergeManager`
+# MergeManager
 
 ## Design Philosophy
 
@@ -275,7 +302,7 @@ This class is completely separated from `Repository` to isolate merge logic. It 
 - `blobDir`: blob storage path
 
 
-# `Utils`
+# Utils
 
 ## Design Philosophy
 
@@ -314,7 +341,7 @@ Utility operations are grouped into hash computation, I/O, object persistence, f
 
 # Helper Classes & Debugging Tools
 
-## `GitletException`
+## GitletException
 
 `GitletException` is the unified runtime error class used in Gitlet to handle user-facing issues with descriptive messages.
 
@@ -327,7 +354,7 @@ It extends Java’s `RuntimeException` and is used to differentiate logic errors
 - Provides default and message constructors.
 - Often used with `Utils.error()` for formatted error throwing.
 
-## `DumpObj`
+## DumpObj
 
 `DumpObj` is a debugging tool that loads and prints serialized Gitlet objects like `CommitManager` or `FileManager`.
 
@@ -341,7 +368,7 @@ Accepts file paths as input, loads objects, and prints structure using each obje
 - Expects all objects to implement `Dumpable`.
 - Dumps structure to console.
 
-## `Dumpable`
+## Dumpable
 
 `Dumpable` is an interface for any serializable Gitlet object that can be inspected using `DumpObj`.
 
