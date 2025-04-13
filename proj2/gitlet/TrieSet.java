@@ -16,7 +16,7 @@ public class TrieSet implements Serializable {
     private final TrieNode root = new TrieNode();
 
     /** 单个节点结构，存储子节点和终止标志 */
-    private static class TrieNode {
+    private static class TrieNode implements Serializable {
         Map<Character, TrieNode> children = new HashMap<>();
         boolean isEnd = false; // 表示这个节点是否为一个完整字符串的结束
     }
