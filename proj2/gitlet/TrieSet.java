@@ -1,5 +1,6 @@
 package gitlet;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.Map;
  * 每个节点代表一个字符，路径从根节点到某个终止节点构成一个完整的字符串。
  * 该结构特别适用于高效的前缀搜索场景，例如实现模糊查找。
  */
-public class TrieSet {
+public class TrieSet implements Serializable {
     private final TrieNode root = new TrieNode();
 
     /** 单个节点结构，存储子节点和终止标志 */
