@@ -1,9 +1,6 @@
 package byow.lab12;
 
 import byow.TileEngine.TERenderer;
-
-import java.util.*;
-
 /**
  * Draws a world consisting of hexagonal regions.
  */
@@ -17,28 +14,13 @@ public class HexWorld {
         // 初始化窗口
         TERenderer ter = new TERenderer();
         ter.initialize(WIDTH, HEIGHT);
-        World world = new World(WIDTH, HEIGHT);
+        World world = new World(WIDTH, HEIGHT, HEX_SIZE);
         // 确定初始落笔点
         int startX = (WIDTH - HEX_SIZE) / 2;
         int startY = 0;
         // 在落笔点画一个六边形
-        Hex startHex = world.drawHex(startX, startY);
         // 以六边形为起点扩散画六边形
-        Queue<Hex> q = new LinkedList<>();
-        q.add(startHex);
-        Set<Hex> visited = new HashSet<>();
-        while (!q.isEmpty()) {
-            Hex cur = q.poll();
-            visited.add(cur);
-            for (Hex adj : cur.adj()) {
-                if (!visited.contains(adj)) {
-                    q.add(adj);
-                }
-                if (!adj.exists()) {
-                    world.drawHex(adj);
-                }
-            }
-        }
+        world.generateWorld(startX, startY);
         // draws the world to the screen
         ter.renderFrame(world.tiles);
     }
