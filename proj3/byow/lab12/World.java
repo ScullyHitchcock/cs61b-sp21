@@ -4,6 +4,9 @@ import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 import java.util.List;
 import java.util.Random;
+import java.util.Stack;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * World 是一个用于生成由六边形区域组成的地图的类。
@@ -76,17 +79,42 @@ public class World {
     }
 
     /**
-     * 递归方式填充当前六边形，并向其所有邻接六边形扩展。
+     * 迭代方式填充当前六边形，并向其所有邻接六边形扩展。
      */
-    private void spreadFilling(Hex hex) {
-        TETile tile = randomTile();
-        fill(hex, tile);
-        for (Hex adj : hex.adjHexes().values()) {
-            if (isValid(adj) && isEmpty(adj)) {
-                spreadFilling(adj);
+    private void spreadFilling(Hex startHex) {
+        Stack<Hex> stack = new Stack<>();
+        Set<Hex> visited = new HashSet<>();
+        stack.push(startHex);
+
+        while (!stack.isEmpty()) {
+            Hex current = stack.pop();
+            if (!isValid(current) || visited.contains(current) || !isEmpty(current)) {
+                continue;
+            }
+
+            visited.add(current);
+            TETile tile = randomTile();
+            fill(current, tile);
+
+            for (Hex neighbor : current.adjHexes().values()) {
+                stack.push(neighbor);
             }
         }
     }
+
+
+//    /**
+//     * 递归方式填充当前六边形，并向其所有邻接六边形扩展。
+//     */
+//    private void spreadFilling(Hex hex) {
+//        TETile tile = randomTile();
+//        fill(hex, tile);
+//        for (Hex adj : hex.adjHexes().values()) {
+//            if (isValid(adj) && isEmpty(adj)) {
+//                spreadFilling(adj);
+//            }
+//        }
+//    }
 
     /**
      * 按照六边形填充规则将 tile 应用于地图。
@@ -96,8 +124,14 @@ public class World {
             for (int y = hex.southY(); y <= hex.northY(); y++) {
                 int distToHorizontalEdge = Math.min(hex.northY() - y, y - hex.southY());
                 int distToVerticalEdge = Math.min(hex.eastX() - x, x - hex.westX());
-                if (distToHorizontalEdge + distToVerticalEdge >= hex.size - 1)
-                    tiles[x][y] = tile;
+                int dist = distToHorizontalEdge + distToVerticalEdge;
+                if (dist >= hex.size - 1) {
+                    if (dist == hex.size - 1 || distToHorizontalEdge == 0) {
+                        tiles[x][y] = Tileset.WALL;
+                    } else {
+                        tiles[x][y] = Tileset.FLOOR;
+                    }
+                }
             }
         }
     }

@@ -6,9 +6,9 @@ import byow.TileEngine.TERenderer;
  */
 public class HexWorld {
 
-    private static final int WIDTH = 27;
-    private static final int HEIGHT = 30;
-    private static final int HEX_SIZE = 3;
+    private static final int WIDTH = 80;
+    private static final int HEIGHT = 50;
+    private static final int HEX_SIZE = 4;
 
     public static void main(String args[]) {
         // 初始化窗口
