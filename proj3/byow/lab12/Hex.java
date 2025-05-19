@@ -96,12 +96,13 @@ public class Hex {
      */
     public Map<Direction, Hex> adjHexes() {
         Map<Direction, Hex> adj = new HashMap<>();
-        adj.put(Direction.UP, new Hex(baseX, northY() + 1, size));
-        adj.put(Direction.DOWN, new Hex(baseX, southY() - height(), size));
-        adj.put(Direction.LEFT_UP, new Hex(westX() - size, southY() + size, size));
-        adj.put(Direction.LEFT_DOWN, new Hex(westX() - size, southY() - size, size));
-        adj.put(Direction.RIGHT_UP, new Hex(eastX() + 1, southY() + size, size));
-        adj.put(Direction.RIGHT_DOWN, new Hex(eastX() + 1, southY() - size, size));
+        int n = northY(), e = eastX(), w = westX(), s = southY();
+        adj.put(Direction.UP, new Hex(baseX, n + 1, size));
+        adj.put(Direction.DOWN, new Hex(baseX, s - height(), size));
+        adj.put(Direction.LEFT_UP, new Hex(w - size, s + size, size));
+        adj.put(Direction.LEFT_DOWN, new Hex(w - size, s - size, size));
+        adj.put(Direction.RIGHT_UP, new Hex(e + 1, s + size, size));
+        adj.put(Direction.RIGHT_DOWN, new Hex(e + 1, s - size, size));
         return adj;
     }
 }
