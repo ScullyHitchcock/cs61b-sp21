@@ -11,7 +11,7 @@ import java.util.*;
  * 包括提交信息、时间、父提交、所追踪文件以及提交 ID。
  * 支持生成子提交、更新追踪文件、判断文件状态变化等功能。
  */
-public class Commit implements Serializable {
+class Commit implements Serializable {
     /** 提交信息 */
     private final String message;
     /** 提交时间 */
@@ -31,7 +31,7 @@ public class Commit implements Serializable {
      * @param parentCommits 父提交 ID 列表
      * @param trackedFile 当前提交所追踪的文件映射
      */
-    public Commit(String message,
+    Commit(String message,
                   Instant time,
                   ArrayList<String> parentCommits,
                   TreeMap<String, String> trackedFile) {
@@ -43,7 +43,7 @@ public class Commit implements Serializable {
     }
 
     /** 创建初始提交对象 */
-    public static Commit createInitCommit() {
+    static Commit createInitCommit() {
         Commit initCommit = new Commit("initial commit",
                 Instant.EPOCH, new ArrayList<>(), new TreeMap<>());
         initCommit.createId();
@@ -56,7 +56,7 @@ public class Commit implements Serializable {
      * @param msg 提交信息
      * @return 新的 Commit 对象
      */
-    public Commit childCommit(String msg) {
+    Commit childCommit(String msg) {
         ArrayList<String> newParents = new ArrayList<>();
         TreeMap<String, String> newTrackedFiles = new TreeMap<>(this.trackedFile);
         Commit child = new Commit(msg, Instant.now(), newParents, newTrackedFiles);
@@ -69,7 +69,7 @@ public class Commit implements Serializable {
      *
      * @param id 父提交 ID
      */
-    public void addParent(String id) {
+    void addParent(String id) {
         parentCommits.add(id);
     }
 
@@ -85,27 +85,27 @@ public class Commit implements Serializable {
     }
 
     /** 返回当前提交的 ID。 */
-    public String id() {
+    String id() {
         return commitId;
     }
 
     /** 返回所有父提交的 ID 列表。 */
-    public List<String> getParentIds() {
+    List<String> getParentIds() {
         return new ArrayList<>(parentCommits); // 返回副本
     }
 
     /** 返回提交信息。 */
-    public String getMessage() {
+    String getMessage() {
         return message;
     }
 
     /** 返回提交时间。 */
-    public Instant getTime() {
+    Instant getTime() {
         return time;
     }
 
     /** 返回当前提交所追踪的文件数据。 */
-    public TreeMap<String, String> getTrackedFile() {
+    TreeMap<String, String> getTrackedFile() {
         return new TreeMap<>(trackedFile); // 返回副本
     }
 
@@ -115,7 +115,7 @@ public class Commit implements Serializable {
      * @param addition 暂存记录
      * @param removal 移除记录
      */
-    public void updateTrackingFiles(Map<String, String> addition, Set<String> removal,
+    void updateTrackingFiles(Map<String, String> addition, Set<String> removal,
                                     File stagingBlobDir, File blobDir) {
         for (Map.Entry<String, String> entry: addition.entrySet()) {
             String fileName = entry.getKey();
@@ -162,7 +162,7 @@ public class Commit implements Serializable {
      * @param fileName 文件名
      * @return 是否正在追踪
      */
-    public boolean isTracking(String fileName) {
+    boolean isTracking(String fileName) {
         return trackedFile.containsKey(fileName);
     }
 
@@ -173,7 +173,7 @@ public class Commit implements Serializable {
      * @param fileName 文件名
      * @return 是否没有变化
      */
-    public boolean isTrackingSameIn(File dir, String fileName) {
+    boolean isTrackingSameIn(File dir, String fileName) {
         String fileHash = Utils.fileHashIn(dir, fileName);
         if (isTracking(fileName) && fileHash != null) {
             return (fileHash.equals(trackedFile.get(fileName)));
@@ -188,7 +188,7 @@ public class Commit implements Serializable {
      * @param fileName 文件名
      * @return 是否没有变化
      */
-    public boolean isTrackingDifferentIn(File dir, String fileName) {
+    boolean isTrackingDifferentIn(File dir, String fileName) {
         return (isTracking(fileName) && !isTrackingSameIn(dir, fileName));
     }
 
@@ -197,7 +197,7 @@ public class Commit implements Serializable {
      *
      * @param commitDir 保存路径
      */
-    public void save(File commitDir) {
+    void save(File commitDir) {
         Utils.writeObject(Utils.join(commitDir, commitId), this);
     }
 }

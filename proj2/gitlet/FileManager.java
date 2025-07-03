@@ -15,7 +15,7 @@ import java.util.*;
  * - 检测文件状态（已修改、已删除、未追踪）
  * - 恢复文件到特定 commit 的状态
  */
-public class FileManager implements Serializable {
+class FileManager implements Serializable {
     /** 保存路径 */
     private final File savePath;
 
@@ -49,7 +49,7 @@ public class FileManager implements Serializable {
      * @param blobsDir           所有 blob 文件的存储目录（版本库中所有文件快照）
      * @param commitManagerPath  CommitManager 的序列化文件路径，用于获取当前 HEAD commit
      */
-    public FileManager(File savePath, File workingDir,
+    FileManager(File savePath, File workingDir,
                        File stagingBlobsDir, File blobsDir, File commitManagerPath) {
         this.savePath = savePath;
         this.workingDir = workingDir;
@@ -63,7 +63,7 @@ public class FileManager implements Serializable {
     }
 
     /** 更新 filesInManagement 获取正在管理的所有文件名列表（当前 HEAD 正在追踪的，和工作区目录下的所有文件名集合）。*/
-    public void updateFiles() {
+    void updateFiles() {
         Commit head = Repository.callCommitManager(commitManagerPath).getHeadCommit();
         Map<String, String> tracking = head.getTrackedFile();
         List<String> workingFiles = Utils.plainFilenamesIn(workingDir);
@@ -79,17 +79,17 @@ public class FileManager implements Serializable {
     }
 
     /** 序列化保存到 savePath 路径中 */
-    public void save() {
+    void save() {
         Utils.writeObject(savePath, this);
     }
 
     /** 获取暂存记录 */
-    public Map<String, String> getAddition() {
+    Map<String, String> getAddition() {
         return new HashMap<>(addition);
     }
 
     /** 获取移除记录 */
-    public Set<String> getRemoval() {
+    Set<String> getRemoval() {
         return new HashSet<>(removal);
     }
 
@@ -98,7 +98,7 @@ public class FileManager implements Serializable {
      *
      * @param fileName 文件名
      */
-    public void addToAddition(String fileName) {
+    void addToAddition(String fileName) {
         String content = Utils.readContentsAsString(Utils.join(workingDir, fileName));
         String fileHash = Utils.sha1(fileName, content);
         addition.put(fileName, fileHash);
@@ -110,7 +110,7 @@ public class FileManager implements Serializable {
      *
      * @param fileName 文件名
      */
-    public void removeFromAddition(String fileName) {
+    void removeFromAddition(String fileName) {
         addition.remove(fileName);
     }
 
@@ -119,7 +119,7 @@ public class FileManager implements Serializable {
      *
      * @param fileName 文件名
      */
-    public void addToRemoval(String fileName) {
+    void addToRemoval(String fileName) {
         removal.add(fileName);
     }
 
@@ -128,7 +128,7 @@ public class FileManager implements Serializable {
      *
      * @param fileName 文件名
      */
-    public void removeFromRemoval(String fileName) {
+    void removeFromRemoval(String fileName) {
         removal.remove(fileName);
     }
 
@@ -138,7 +138,7 @@ public class FileManager implements Serializable {
      * @param fileName 文件名
      * @return true or false
      */
-    public boolean isInCWD(String fileName) {
+    boolean isInCWD(String fileName) {
         return Utils.join(workingDir, fileName).exists();
     }
 
@@ -148,7 +148,7 @@ public class FileManager implements Serializable {
      * @param fileName 文件名
      * @return 是否在 addition 中
      */
-    public boolean isStagingInAdd(String fileName) {
+    boolean isStagingInAdd(String fileName) {
         return (addition.containsKey(fileName));
     }
 
@@ -158,7 +158,7 @@ public class FileManager implements Serializable {
      * @param fileName 文件名
      * @return 是否在 removal 中
      */
-    public boolean isStagingInRm(String fileName) {
+    boolean isStagingInRm(String fileName) {
         return removal.contains(fileName);
     }
 
@@ -173,7 +173,7 @@ public class FileManager implements Serializable {
      * @param fileName 文件名
      * @return 是否已删除
      */
-    public boolean hasDeleted(Commit commit, String fileName) {
+    boolean hasDeleted(Commit commit, String fileName) {
         if (isInCWD(fileName)) {
             return false;
         } else {
@@ -193,7 +193,7 @@ public class FileManager implements Serializable {
      * @param fileName 文件名
      * @return 是否已修改
      */
-    public boolean hasModified(Commit commit, String fileName) {
+    boolean hasModified(Commit commit, String fileName) {
         if (!isInCWD(fileName)) {
             return false;
         }
@@ -216,7 +216,7 @@ public class FileManager implements Serializable {
      * @param fileName 文件名
      * @return 是否未追踪
      */
-    public boolean isNotTracking(Commit commit, String fileName) {
+    boolean isNotTracking(Commit commit, String fileName) {
         if (!isInCWD(fileName)) {
             return false;
         }
@@ -225,7 +225,7 @@ public class FileManager implements Serializable {
     }
 
     /** 清空 stagingBlobsDir 目录下的文件，以及 addition 和 removal 的记录 */
-    public void clearStageArea() {
+    void clearStageArea() {
         addition = new HashMap<>();
         removal = new HashSet<>();
         Utils.clean(stagingBlobsDir);
@@ -236,7 +236,7 @@ public class FileManager implements Serializable {
      *
      * @param commit 当前 commit
      */
-    public void checkout(Commit commit) {
+    void checkout(Commit commit) {
         Map<String, String> branchTrackingFiles = commit.getTrackedFile();
         for (String fileName : branchTrackingFiles.keySet()) {
             // 只要工作区的文件与追踪的版本不同，或追踪的文件不在工作区中，都进行 checkout
@@ -252,7 +252,7 @@ public class FileManager implements Serializable {
      * @param commit 当前 commit
      * @param fileName 文件名
      */
-    public void checkout(Commit commit, String fileName) {
+    void checkout(Commit commit, String fileName) {
         String fileHash = commit.getTrackedFile().get(fileName);
         String blobContent = Utils.readContentsAsString(Utils.join(blobsDir, fileHash));
         Utils.writeContents(Utils.join(workingDir, fileName), blobContent);
@@ -263,7 +263,7 @@ public class FileManager implements Serializable {
      *
      * @return 暂存状态的文件列表（已排序）
      */
-    public List<String> getStagedFiles() {
+    List<String> getStagedFiles() {
         List<String> stagedFiles = new ArrayList<>();
         for (String fileName : filesInManagement) {
             if (isStagingInAdd(fileName)) {
@@ -279,7 +279,7 @@ public class FileManager implements Serializable {
      *
      * @return 移除状态的文件列表（已排序）
      */
-    public List<String> getRemovedFiles() {
+    List<String> getRemovedFiles() {
         List<String> removedFiles = new ArrayList<>();
         for (String fileName : filesInManagement) {
             if (isStagingInRm(fileName)) {
@@ -296,7 +296,7 @@ public class FileManager implements Serializable {
      * @param head 当前 HEAD commit
      * @return 修改或删除状态的文件列表（已排序）
      */
-    public List<String> getModifiedFiles(Commit head) {
+    List<String> getModifiedFiles(Commit head) {
         List<String> modifiedFiles = new ArrayList<>();
         for (String fileName : filesInManagement) {
             if (hasDeleted(head, fileName)) {
@@ -315,7 +315,7 @@ public class FileManager implements Serializable {
      * @param head 当前 HEAD commit
      * @return 未追踪状态的文件列表（已排序）
      */
-    public List<String> getUntrackedFiles(Commit head) {
+    List<String> getUntrackedFiles(Commit head) {
         List<String> untrackedFiles = new ArrayList<>();
         for (String fileName : filesInManagement) {
             if (isNotTracking(head, fileName)) {
@@ -332,7 +332,7 @@ public class FileManager implements Serializable {
      * @param remoteFM 远程 FileManager 对象，提供 blob 文件的来源
      * @param blobName blob 文件名（即文件哈希值）
      */
-    public void fetchBlobFrom(FileManager remoteFM, String blobName) {
+    void fetchBlobFrom(FileManager remoteFM, String blobName) {
         File oldFile = Utils.join(remoteFM.blobsDir, blobName);
         if (oldFile.exists()) {
             String content = Utils.readContentsAsString(oldFile);

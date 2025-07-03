@@ -8,7 +8,7 @@ import java.util.*;
  * 管理所有提交（Commit）对象和分支信息。
  * 负责维护提交图、分支指针、HEAD 状态、远程仓库地址等数据。
  */
-public class CommitManager implements Serializable {
+class CommitManager implements Serializable {
     /** CommitManager 保存路径 */
     private final File savePath;
 
@@ -35,7 +35,7 @@ public class CommitManager implements Serializable {
      * 创建 main 分支和初始提交，并将其添加到提交集合中。
      * 创建初始 commit 并保存
      */
-    public CommitManager(File savePath, File commitDir) {
+    CommitManager(File savePath, File commitDir) {
         this.savePath = savePath;
         this.commitDir = commitDir;
         commits = new HashMap<>();
@@ -48,42 +48,42 @@ public class CommitManager implements Serializable {
     }
 
     /** 将 manager 保存到 savePath 路径中 */
-    public void save() {
+    void save() {
         Utils.writeObject(savePath, this);
     }
 
     /** 获取分支名列表 */
-    public List<String> getBranches() {
+    List<String> getBranches() {
         List<String> branchList = new ArrayList<>(this.branches.keySet());
         Collections.sort(branchList);
         return branchList;
     }
 
     /** 返回 HEAD 指向的分支名 */
-    public String headBranch() {
+    String headBranch() {
         return headBranchName;
     }
 
     /** 返回 HEAD 指向的 Commit 对象 */
-    public Commit getHeadCommit() {
+    Commit getHeadCommit() {
         String headId = branches.get(headBranchName);
         return getCommit(headId);
     }
 
     /** 以 Map 形式返回所有 commit id 和 commit msg */
-    public HashMap<String, String> getAllCommits() {
+    HashMap<String, String> getAllCommits() {
         return new HashMap<>(commits);
     }
 
     /** 切换当前 HEAD 指针到指定分支上 */
-    public void changeHeadTo(String branchName) {
+    void changeHeadTo(String branchName) {
         if (branches.containsKey(branchName)) {
             headBranchName = branchName;
         }
     }
 
     /** 传入 commit id，将对应的 commit 设置为 HEAD */
-    public void setHeadCommit(String id) {
+    void setHeadCommit(String id) {
         branches.put(headBranchName, id);
     }
 
@@ -93,7 +93,7 @@ public class CommitManager implements Serializable {
      * @param branch 分支名
      * @return 分支下最新的 Commit 对象，如果分支不存在，返回 null
      */
-    public Commit getBranchCommit(String branch) {
+    Commit getBranchCommit(String branch) {
         String branchCommitId = branches.get(branch);
         if (branchCommitId == null) {
             return null;
@@ -107,7 +107,7 @@ public class CommitManager implements Serializable {
      * @param id commit id 或 id 的前几个字符串
      * @return 查找成功返回 Commit 对象，失败返回 null
      */
-    public Commit getCommit(String id) {
+    Commit getCommit(String id) {
         String matchId;
         if (commits.containsKey(id)) {
             matchId = id;
@@ -126,7 +126,7 @@ public class CommitManager implements Serializable {
     }
 
     /** 判断 manager 是否有指定分支名 */
-    public boolean containsBranch(String branchName) {
+    boolean containsBranch(String branchName) {
         return branches.containsKey(branchName);
     }
 
@@ -135,7 +135,7 @@ public class CommitManager implements Serializable {
      *
      * @param commit 要添加的提交对象
      */
-    public void addCommit(Commit commit) {
+    void addCommit(Commit commit) {
         String id = commit.id();
         if (!commits.containsKey(id)) {
             String commitMessage = commit.getMessage();
@@ -152,7 +152,7 @@ public class CommitManager implements Serializable {
      * @param branchName 分支名
      * @return 成功创建返回 true，否则 false
      */
-    public boolean createNewBranch(String branchName) {
+    boolean createNewBranch(String branchName) {
         if (containsBranch(branchName)) {
             return false;
         }
@@ -162,7 +162,7 @@ public class CommitManager implements Serializable {
     }
 
     /** 删除分支，不影响 commits */
-    public void removeBranch(String branchName) {
+    void removeBranch(String branchName) {
         branches.remove(branchName);
     }
 
@@ -172,7 +172,7 @@ public class CommitManager implements Serializable {
      * @param msg 提交信息
      * @return Commit 对象列表，当没有对象时返回空列表
      */
-    public List<Commit> findByMessage(String msg) {
+    List<Commit> findByMessage(String msg) {
         ArrayList<Commit> res = new ArrayList<>();
         for (Map.Entry<String, String> entry: commits.entrySet()) {
             String id = entry.getKey();
@@ -193,7 +193,7 @@ public class CommitManager implements Serializable {
      * @param commitId2 本地 CommitManager 保存的 Commit 对象 ID
      * @return 两者最近公共祖先的 Commit 对象
      */
-    public Commit findSplitPoint(CommitManager otherCM, String commitId1, String commitId2) {
+    Commit findSplitPoint(CommitManager otherCM, String commitId1, String commitId2) {
         // 先获得 otherCM 里的 commitId1 的所有祖先
         Set<String> ancestors = otherCM.getAllAncestors(commitId1);
         // 从 commitId2 向上遍历查找第一个出现在 ancestors 中的 commit
@@ -225,7 +225,7 @@ public class CommitManager implements Serializable {
      * @param commitId 起始提交的 ID
      * @return 包含所有祖先 ID 的集合
      */
-    public Set<String> getAllAncestors(String commitId) {
+    Set<String> getAllAncestors(String commitId) {
         Set<String> ancestors = new HashSet<>();
         Queue<String> queue = new LinkedList<>();
         // 初始在队列加入元素自身
@@ -252,7 +252,7 @@ public class CommitManager implements Serializable {
      * @param remoteName 远程仓库名
      * @param remoteCM 远程仓库地址
      */
-    public void addRemoteRepo(String remoteName, File remoteCM) {
+    void addRemoteRepo(String remoteName, File remoteCM) {
         remoteRepos.put(remoteName, remoteCM);
     }
 
@@ -261,17 +261,17 @@ public class CommitManager implements Serializable {
      *
      * @param remoteName 仓库名
      */
-    public void rmRemoteRepo(String remoteName) {
+    void rmRemoteRepo(String remoteName) {
         remoteRepos.remove(remoteName);
     }
 
     /** 判断是否保存了指定远程仓库 */
-    public boolean containsRemoteRepo(String remoteName) {
+    boolean containsRemoteRepo(String remoteName) {
         return remoteRepos.containsKey(remoteName);
     }
 
     /** 返回远程仓库 Map */
-    public HashMap<String, File> getRemoteRepos() {
+    HashMap<String, File> getRemoteRepos() {
         return new HashMap<>(remoteRepos);
     }
 }

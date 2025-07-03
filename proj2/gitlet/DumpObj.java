@@ -15,7 +15,7 @@ import java.io.File;
  *        class MyClass implements Serializeable, Dumpable {
  *            ...
  *            @Override
- *            public void dump() {
+ *            void dump() {
  *               System.out.printf("size: %d%nmapping: %s%n", _size, _mapping);
  *            }
  *            ...
@@ -40,7 +40,7 @@ import java.io.File;
  *        class MyClass implements Serializeable, Dumpable {
  *            ...
  *            @Override
- *            public void dump() {
+ *            void dump() {
  *               System.out.printf("size: %d%nmapping: %s%n", _size, _mapping);
  *            }
  *            ...
@@ -51,11 +51,11 @@ import java.io.File;
  *  如上所示，你的 dump 方法应该打印出该类对象中有用的信息。
  *  @author P. N. Hilfinger
  */
-public class DumpObj {
+class DumpObj {
 
     /** Deserialize and apply dump to the contents of each of the files
      *  in FILES. */
-    public static void main(String... files) {
+    static void main(String... files) {
         for (String fileName : files) {
             Dumpable obj = Utils.readObject(new File(fileName),
                                             Dumpable.class);

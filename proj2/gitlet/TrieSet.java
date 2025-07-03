@@ -12,7 +12,7 @@ import java.util.Map;
  * 每个节点代表一个字符，路径从根节点到某个终止节点构成一个完整的字符串。
  * 该结构特别适用于高效的前缀搜索场景，例如实现模糊查找。
  */
-public class TrieSet implements Serializable {
+class TrieSet implements Serializable {
     private final TrieNode root = new TrieNode();
 
     /** 单个节点结构，存储子节点和终止标志 */
@@ -22,7 +22,7 @@ public class TrieSet implements Serializable {
     }
 
     /** 向 Trie 中添加一个字符串 */
-    public void add(String word) {
+    void add(String word) {
         TrieNode node = root;
         for (char ch : word.toCharArray()) {
             node = node.children.computeIfAbsent(ch, c -> new TrieNode());
@@ -31,13 +31,13 @@ public class TrieSet implements Serializable {
     }
 
     /** 判断 Trie 中是否包含这个字符串 */
-    public boolean contains(String word) {
+    boolean contains(String word) {
         TrieNode node = findNode(word);
         return node != null && node.isEnd;
     }
 
     /** 返回以 prefix 为前缀的所有字符串 */
-    public List<String> startsWith(String prefix) {
+    List<String> startsWith(String prefix) {
         List<String> result = new ArrayList<>();
         TrieNode node = findNode(prefix);
         if (node != null) {

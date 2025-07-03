@@ -206,7 +206,7 @@ class Utils {
     private static final FilenameFilter PLAIN_FILES =
         new FilenameFilter() {
             @Override
-            public boolean accept(File dir, String name) {
+            boolean accept(File dir, String name) {
                 return new File(dir, name).isFile();
             }
         };

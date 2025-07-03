@@ -28,7 +28,7 @@ import java.util.Set;
  * 6. 若处理了冲突，额外打印提示信息。
  */
 
-public class MergeManager {
+class MergeManager {
 
     /** 当前分支与目标分支的最近公共祖先提交（分裂点） */
     private final Commit splitPoint;
@@ -58,7 +58,7 @@ public class MergeManager {
     private final File blobDir;
 
     /** 构造 MergeManager 对象 */
-    public MergeManager(Commit splitPoint,
+    MergeManager(Commit splitPoint,
                         Commit currentCommit,
                         Commit givenCommit,
                         Collection<String> untrackedFiles,
@@ -96,7 +96,7 @@ public class MergeManager {
      *
      * @return 若所有文件合并成功（无未追踪冲突）返回 true，否则 false
      */
-    public boolean merge() {
+    boolean merge() {
         Set<String> files = getAllFiles();
         for (String fileName : files) {
             if (!merge(fileName)) {
@@ -202,7 +202,7 @@ public class MergeManager {
     /**
      * 执行 checkout 操作：将需要检出的文件从 givenCommit 还原到工作区，并添加到暂存区。
      */
-    public void doCheckout() {
+    void doCheckout() {
         for (String fileName : checkoutFiles) {
             Repository.checkout(new String[]{givenCommit.id(), "--", fileName});
             Repository.addFile(fileName);
@@ -212,7 +212,7 @@ public class MergeManager {
     /**
      * 执行 remove 操作：将需要移除的文件从版本库和暂存区中删除。
      */
-    public void doRemove() {
+    void doRemove() {
         for (String fileName : removeFiles) {
             Repository.remove(fileName);
         }
@@ -221,7 +221,7 @@ public class MergeManager {
     /**
      * 处理冲突文件：将冲突文件以特定格式写入工作区并添加到暂存区。
      */
-    public void handleConflict() {
+    void handleConflict() {
         for (String fileName : conflictFiles) {
             String curHash = currentCommit.getTrackedFile().get(fileName);
             String givHash = givenCommit.getTrackedFile().get(fileName);
@@ -250,7 +250,7 @@ public class MergeManager {
      *
      * @return 若有冲突文件返回 true，否则 false
      */
-    public boolean encounteredConflict() {
+    boolean encounteredConflict() {
         return !conflictFiles.isEmpty();
     }
 

@@ -14,7 +14,7 @@ import static gitlet.Utils.*;
  *
  *  @author CST
  */
-public class Repository {
+class Repository {
 
     /** The current working directory. */
     private static final File CWD = new File(System.getProperty("user.dir"));
@@ -35,7 +35,7 @@ public class Repository {
     private static final File COMMIT_MANAGER = join(GITLET_DIR, "CommitManager");
     private static final File FILE_MANAGER = join(GITLET_DIR, "fileManager");
 
-    public static File gitletDir() {
+    static File gitletDir() {
         return GITLET_DIR;
     }
 
@@ -43,7 +43,7 @@ public class Repository {
      * 初始化版本库目录和初始提交。
      * 创建 .gitlet 目录及其子目录，并生成初始提交。
      */
-    public static void setup() {
+    static void setup() {
 
         if (GITLET_DIR.exists()) {
             throw Utils.error("A Gitlet version-control system "
@@ -65,7 +65,7 @@ public class Repository {
      *
      * @return CommitManager 管理器
      */
-    public static CommitManager callCommitManager(File path) {
+    static CommitManager callCommitManager(File path) {
         return Utils.readObject(path, CommitManager.class);
     }
 
@@ -74,7 +74,7 @@ public class Repository {
      *
      * @return FileManager 管理器
      */
-    public static FileManager callFileManager(File path) {
+    static FileManager callFileManager(File path) {
         FileManager manager = Utils.readObject(path, FileManager.class);
         manager.updateFiles();
         return manager;
@@ -88,7 +88,7 @@ public class Repository {
      *
      * @param fileName 文件名
      */
-    public static void addFile(String fileName) {
+    static void addFile(String fileName) {
         // 如果 fileName 被 head 追踪且与追踪的内容相同，则确保它在 fileManager.addition 中不存在
         // 否则则将其加入 fileManager.addition 区（创建或覆盖）
         // 无论如何确保 fileName 在 fileManager.removal 区中不存在。
@@ -115,7 +115,7 @@ public class Repository {
      *
      * @param fileName 文件名
      */
-    public static void remove(String fileName) {
+    static void remove(String fileName) {
         // 如果被 HEAD 追踪：就将 fileName 标记为待删除，并删除工作目录中的该文件。
         // 无论如何确保 fileName 在 fileManager.addition 区中不存在。
 
@@ -139,7 +139,7 @@ public class Repository {
      * @param commitMessage 提交信息
      * @param branch        若为合并提交，提供第二父提交所在分支名
      */
-    public static void commit(String commitMessage, String branch) {
+    static void commit(String commitMessage, String branch) {
 
         FileManager fileManager = callFileManager(FILE_MANAGER);
         Map<String, String> addition = fileManager.getAddition();
@@ -174,7 +174,7 @@ public class Repository {
     /**
      * 打印当前分支的提交历史，从 HEAD 回溯到初始提交。
      */
-    public static void log() {
+    static void log() {
         CommitManager manager = callCommitManager(COMMIT_MANAGER);
         Commit cur = manager.getHeadCommit();
 
@@ -194,7 +194,7 @@ public class Repository {
     /**
      * 打印所有分支的所有提交历史。
      */
-    public static void globalLog() {
+    static void globalLog() {
         CommitManager manager = callCommitManager(COMMIT_MANAGER);
         Map<String, String> allCommits = manager.getAllCommits();
         for (String commitHash: allCommits.keySet()) {
@@ -234,7 +234,7 @@ public class Repository {
      *
      * @param msg 提交信息
      */
-    public static void find(String msg) {
+    static void find(String msg) {
         CommitManager manager = callCommitManager(COMMIT_MANAGER);
         List<Commit> commitsWithMsg = manager.findByMessage(msg);
         if (commitsWithMsg.isEmpty()) {
@@ -250,7 +250,7 @@ public class Repository {
      *
      * @param checkoutArgs 切换参数
      */
-    public static void checkout(String[] checkoutArgs) {
+    static void checkout(String[] checkoutArgs) {
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit head = commitManager.getHeadCommit();
         FileManager fileManager = callFileManager(FILE_MANAGER);
@@ -315,7 +315,7 @@ public class Repository {
      *
      * @param branch 分支名称
      */
-    public static void branch(String branch) {
+    static void branch(String branch) {
         CommitManager manager = callCommitManager(COMMIT_MANAGER);
         boolean created =  manager.createNewBranch(branch);
         if (created) {
@@ -330,7 +330,7 @@ public class Repository {
      *
      * @param branch 分支名称
      */
-    public static void rmBranch(String branch) {
+    static void rmBranch(String branch) {
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         if (branch.equals(commitManager.headBranch())) {
             throw error("Cannot remove the current branch.");
@@ -345,7 +345,7 @@ public class Repository {
     /**
      * 展示当前所有状态，包括分支、暂存区、未追踪文件等。
      */
-    public static void status() {
+    static void status() {
         FileManager fileManager = callFileManager(FILE_MANAGER);
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit head = commitManager.getHeadCommit();
@@ -429,7 +429,7 @@ public class Repository {
      *
      * @param commitId 提交 ID
      */
-    public static void reset(String commitId) {
+    static void reset(String commitId) {
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         Commit commit = commitManager.getCommit(commitId);
         if (commit == null) {
@@ -460,7 +460,7 @@ public class Repository {
      *
      * @param branch 分支名称
      */
-    public static void merge(String branch) {
+    static void merge(String branch) {
         // 如果当前暂存区非空，报错 "You have uncommitted changes."
         // 如果分支 branch 不存在，报错 "A branch with that name does not exist."
         // 如果当前分支与 branch 相同，报错 "Cannot merge a branch with itself."
@@ -533,7 +533,7 @@ public class Repository {
      * @param remoteName     远程仓库名称（本地引用名）
      * @param remoteAddress  远程仓库的根路径（包含 .gitlet 目录）
      */
-    public static void addRemote(String remoteName, String remoteAddress) {
+    static void addRemote(String remoteName, String remoteAddress) {
         // 检查是否已经存在 remoteName，存在则报错
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         if (commitManager.containsRemoteRepo(remoteName)) {
@@ -552,7 +552,7 @@ public class Repository {
      *
      * @param remoteName 要删除的远程仓库名称
      */
-    public static void rmRemote(String remoteName) {
+    static void rmRemote(String remoteName) {
         CommitManager commitManager = callCommitManager(COMMIT_MANAGER);
         if (!commitManager.containsRemoteRepo(remoteName)) {
             throw error("A remote with that name does not exist.");
@@ -570,7 +570,7 @@ public class Repository {
      * @param remoteName        远程仓库名称
      * @param remoteBranchName  远程仓库中的分支名称
      */
-    public static void push(String remoteName, String remoteBranchName) {
+    static void push(String remoteName, String remoteBranchName) {
         // 打开远程仓库和本地仓库各自的 commitManager，localCM 和 remoteCM
         CommitManager localCM = callCommitManager(COMMIT_MANAGER);
         File remoteGitletDir = localCM.getRemoteRepos().get(remoteName);
@@ -617,7 +617,7 @@ public class Repository {
      * @param remoteName        远程仓库名称
      * @param remoteBranchName  远程分支名称
      */
-    public static void fetch(String remoteName, String remoteBranchName) {
+    static void fetch(String remoteName, String remoteBranchName) {
         // 打开远程仓库和本地仓库各自的 commitManager 和 fileManager
         CommitManager localCM = callCommitManager(COMMIT_MANAGER);
         FileManager localFM = callFileManager(FILE_MANAGER);
@@ -676,7 +676,7 @@ public class Repository {
      * @param remoteName        远程仓库名称
      * @param remoteBranchName  远程分支名称
      */
-    public static void pull(String remoteName, String remoteBranchName) {
+    static void pull(String remoteName, String remoteBranchName) {
         fetch(remoteName, remoteBranchName);
         merge(remoteName + "/" + remoteBranchName);
     }
